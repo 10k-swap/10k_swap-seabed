@@ -1,0 +1,8 @@
+{
+  "name": "10k_swap-seabed",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/10k-swap/l0k_swap-seabed",
+  "author": "0x60018 <0x60018@gmail.com>",
+  "license": "MIT"
+}

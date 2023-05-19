@@ -1,0 +1,24 @@
+logs/
+npm-debug.log
+yarn-error.log
+.yarn
+node_modules/
+coverage/
+.idea/
+run/
+.DS_Store
+*.sw*
+*.un~
+.nyc_output/
+dist/
+db_data*/
+nginx*/
+local.*
+.env
+.data/
+.vscode
+redis/
+
+# nginx ssl
+nginx.domain.key
+nginx.domain.crt
