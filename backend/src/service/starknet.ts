@@ -1,8 +1,8 @@
 import { GetBlockResponse, Provider } from 'starknet'
 import { SnBlock } from '../model/sn_block'
-import { isRpcTooManyRequests, sleep } from '../util'
+import { sleep } from '../util'
 import { Core } from '../util/core'
-import { errorLogger } from '../util/logger'
+import { accessLogger } from '../util/logger'
 
 export class StarknetService {
   public static latestBlockNumber = 0
@@ -21,6 +21,7 @@ export class StarknetService {
 
   async collectSNBlock() {
     const lastSNBlock = await this.repoSnBlock.findOne(undefined, {
+      select: ['block_number'],
       order: { block_number: 'DESC' },
     })
 
@@ -30,6 +31,9 @@ export class StarknetService {
       bnArray.push(i)
 
       if (i % 10 === 0 || i >= StarknetService.latestBlockNumber) {
+        // TODO: for debug online
+        accessLogger.info(`Collect starknet blocks: ${bnArray.join(', ')}`)
+
         const blocks = await Promise.all(
           bnArray.map((item) => this.getSNBlockInfo(item))
         )
@@ -38,6 +42,7 @@ export class StarknetService {
         await Promise.all(
           blocks.map(async (block) => {
             const one = await this.repoSnBlock.findOne(undefined, {
+              select: ['id'],
               where: { block_number: block.block_number },
             })
 
