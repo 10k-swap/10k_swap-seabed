@@ -14,6 +14,10 @@ export class StarknetService {
 
   async updateLatestBlockNumber() {
     const { block_number } = await this.provider.getBlock('latest')
+
+    // TODO: for debug online
+    accessLogger.info(`Block_number: ${block_number}`)
+
     if (block_number > StarknetService.latestBlockNumber) {
       StarknetService.latestBlockNumber = block_number
     }
