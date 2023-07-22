@@ -1,4 +1,4 @@
-import { BlockNumber, GetBlockResponse, Provider } from 'starknet'
+import { GetBlockResponse, Provider } from 'starknet'
 import { SnBlock } from '../model/sn_block'
 import { sleep } from '../util'
 import { Core } from '../util/core'
