@@ -1,4 +1,4 @@
-import { GetBlockResponse, Provider } from 'starknet'
+import { BlockNumber, GetBlockResponse, Provider } from 'starknet'
 import { SnBlock } from '../model/sn_block'
 import { sleep } from '../util'
 import { Core } from '../util/core'
@@ -13,7 +13,7 @@ export class StarknetService {
   ) {}
 
   async updateLatestBlockNumber() {
-    const { block_number } = await this.provider.getBlock('latest')
+    const { block_number } = await this.getSNBlockInfo('latest')
 
     // TODO: for debug online
     accessLogger.info(`Block_number: ${block_number}`)
@@ -66,7 +66,7 @@ export class StarknetService {
   }
 
   async getSNBlockInfo(
-    blockNumber: number,
+    blockNumber: number | string,
     tryCount = 0
   ): Promise<GetBlockResponse> {
     try {
