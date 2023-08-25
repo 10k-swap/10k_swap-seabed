@@ -85,10 +85,10 @@ export class PoolService {
           },
         },
         query:
-          'query TokenPageQuery(\n  $input: ERC20ContractInput!\n) {\n  erc20Contract(input: $input) {\n    contract_address\n    ...TokenPageOverviewTabFragment_erc20Contract\n    contract {\n      ...ContractFunctionReadWriteTabFragment_contract\n      id\n    }\n    id\n  }\n}\n\nfragment ContractFunctionReadCallsFragment_starknetClass on StarknetClass {\n  is_code_verified\n  abi_final\n}\n\nfragment ContractFunctionReadWriteTabFragment_contract on Contract {\n  contract_address\n  starknet_class {\n    ...ContractFunctionReadCallsFragment_starknetClass\n    ...ContractFunctionWriteCallsFragment_starknetClass\n    id\n  }\n}\n\nfragment ContractFunctionWriteCallsFragment_starknetClass on StarknetClass {\n  is_code_verified\n  abi_final\n}\n\nfragment TokenPageOverviewTabFragment_erc20Contract on ERC20Contract {\n  contract_address\n  name_custom\n  name\n  symbol\n  decimals\n  total_supply_display\n  number_of_owners\n  is_social_verified\n}\n',
+          'query TokenPageQuery(\n  $input: ERC20ContractInput!\n) {\n  erc20Contract(input: $input) {\n    contract_address\n    ...TokenPageOverviewTabFragment_erc20Contract\n    contract {\n      ...ContractFunctionReadWriteTabFragment_contract\n      id\n    }\n    id\n  }\n}\n\nfragment ContractFunctionReadCallsFragment_starknetClass on StarknetClass {\n  is_code_verified\n  abi_final\n}\n\nfragment ContractFunctionReadWriteTabFragment_contract on Contract {\n  contract_address\n  starknet_class {\n    ...ContractFunctionReadCallsFragment_starknetClass\n    ...ContractFunctionWriteCallsFragment_starknetClass\n    id\n  }\n}\n\nfragment ContractFunctionWriteCallsFragment_starknetClass on StarknetClass {\n  is_code_verified\n  abi_final\n}\n\nfragment TokenPageOverviewTabFragment_erc20Contract on ERC20Contract {\n  contract_address\n  name_custom\n  name\n  symbol\n  decimals\n  is_social_verified\n  erc20_contract_stats {\n    total_supply_display\n    number_of_owners\n    id\n  }\n}\n',
       }
 
-      const { data } = await axiosClient.post('/graphql', postData)
+      const { data } = await axiosClient.post('/', postData)
       const erc20Contract = data?.data?.erc20Contract
 
       name = erc20Contract?.name
