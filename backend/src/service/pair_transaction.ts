@@ -3,10 +3,9 @@ import { addAddressPadding, Provider, uint256 } from 'starknet'
 import { In, Repository } from 'typeorm'
 import { PairEvent } from '../model/pair_event'
 import { PairTransaction } from '../model/pair_transaction'
-import { sleep } from '../util'
+import { getRpcProviderFromEnv, sleep } from '../util'
 import { Core } from '../util/core'
 import { errorLogger } from '../util/logger'
-import { StarkscanService } from './starkscan'
 import { ViewblockService } from './viewblock'
 import { VoyagerService } from './voyager'
 
@@ -14,13 +13,11 @@ const TRANSACTION_FEE_RATIO = 3
 
 export class PairTransactionService {
   private provider: Provider
-  private starkscanService: StarkscanService
   private repoPairEvent: Repository<PairEvent>
   private repoPairTransaction: Repository<PairTransaction>
 
   constructor(provider: Provider) {
     this.provider = provider
-    this.starkscanService = new StarkscanService(this.provider)
     this.repoPairEvent = Core.db.getRepository(PairEvent)
     this.repoPairTransaction = Core.db.getRepository(PairTransaction)
   }
@@ -141,14 +138,12 @@ export class PairTransactionService {
       .process(updateAccountGroup.bind(this))
   }
 
-  private totalGroupGetAccountAddress = 4
+  private totalGroupGetAccountAddress = 5
   private async getAccountAddress(index: number, transaction_hash: string) {
     if (index % this.totalGroupGetAccountAddress === 0) {
       const tx = await this.provider.getTransaction(transaction_hash)
       const account_address = tx.contract_address || tx.sender_address
-      if (account_address) {
-        return account_address
-      }
+      if (account_address) return account_address
     }
 
     if (index % this.totalGroupGetAccountAddress === 1) {
@@ -157,9 +152,8 @@ export class PairTransactionService {
         .getAxiosClient()
         .get(`/api/txn/${transaction_hash}`)
 
-      if (resp.data?.header?.contract_address) {
+      if (resp.data?.header?.contract_address)
         return resp.data.header.contract_address as string
-      }
     }
 
     if (index % this.totalGroupGetAccountAddress === 2) {
@@ -170,34 +164,26 @@ export class PairTransactionService {
 
       await sleep(300)
 
-      if (resp.data?.extra?.contractAddress) {
-        return resp.data.extra.contractAddress as string
-      }
+      if (resp.data?.sender_address) return resp.data?.sender_address as string
     }
 
-    // From starkscan ⬇⬇⬇
-    const postData = {
-      operationName: 'transaction',
-      variables: {
-        input: {
-          transaction_hash,
-        },
-      },
-      query:
-        'query transaction($input: TransactionInput!) {\n  transaction(input: $input) {\n    transaction_hash\n    block_hash\n    block_number\n    transaction_index\n    transaction_status\n    transaction_type\n    version\n    signature\n    max_fee\n    actual_fee\n    nonce\n    contract_address\n    entry_point_selector\n    entry_point_type\n    calldata\n    class_hash\n    sender_address\n    constructor_calldata\n    contract_address_salt\n    number_of_events\n    number_of_message_logs\n    number_of_calls\n    timestamp\n    entry_point_selector_name\n    calldata_decoded\n    execution_resources {\n      execution_resources_n_steps\n      execution_resources_n_memory_holes\n      execution_resources_builtin_instance_counter {\n        name\n        value\n        __typename\n      }\n      __typename\n    }\n    erc20_transfer_events {\n      event_id\n      transaction_hash\n      from_address\n      transfer_from_address\n      transfer_to_address\n      transfer_amount\n      call_invocation_type\n      main_call_id\n      timestamp\n      erc20_metadata {\n        contract_address\n        name\n        symbol\n        decimals\n        __typename\n      }\n      __typename\n    }\n    main_calls {\n      call_id\n      call_index\n      caller_address\n      contract_address\n      calldata\n      result\n      call_type\n      class_hash\n      selector\n      entry_point_type\n      selector_name\n      calldata_decoded\n      contract {\n        contract_address\n        class_hash\n        deployed_at_transaction_hash\n        deployed_at_timestamp\n        name_tag\n        implementation_type\n        is_social_verified\n        starknet_id {\n          domain\n          __typename\n        }\n        __typename\n      }\n      __typename\n    }\n    contract {\n      contract_address\n      class_hash\n      deployed_at_transaction_hash\n      deployed_at_timestamp\n      name_tag\n      implementation_type\n      is_social_verified\n      starknet_id {\n        domain\n        __typename\n      }\n      __typename\n    }\n    sender {\n      contract_address\n      class_hash\n      deployed_at_transaction_hash\n      deployed_at_timestamp\n      name_tag\n      implementation_type\n      is_social_verified\n      starknet_id {\n        domain\n        __typename\n      }\n      __typename\n    }\n    deployed_contracts {\n      contract_address\n      class_hash\n      deployed_at_transaction_hash\n      deployed_at_timestamp\n      name_tag\n      implementation_type\n      is_social_verified\n      starknet_id {\n        domain\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}',
+    if (index % this.totalGroupGetAccountAddress === 3) {
+      const transaction = await this.provider.getTransaction(transaction_hash)
+      const account_address =
+        transaction['contract_address'] || transaction['sender_address']
+
+      if (account_address) return account_address
     }
 
-    const { data } = await this.starkscanService
-      .getAxiosClient()
-      .post('/graphql', postData)
-    const account_address = (data?.data?.transaction?.contract_address ||
-      data?.data?.transaction?.sender_address ||
+    // Rpc provider ⬇⬇⬇
+    const rpcProvider = getRpcProviderFromEnv()
+    const transaction = await rpcProvider.getTransactionByHash(transaction_hash)
+    const account_address = (transaction['contract_address'] ||
+      transaction['sender_address'] ||
       '') as string
     if (!account_address) {
       errorLogger.error(
-        `Response miss contract_address. transaction_hash: ${transaction_hash}. Response data: ${JSON.stringify(
-          data
-        )}`
+        `Response miss contract_address. transaction_hash: ${transaction_hash}.`
       )
     }
 
