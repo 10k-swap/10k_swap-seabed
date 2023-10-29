@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import { Provider, validateAndParseAddress } from 'starknet'
+import { Provider, RpcProvider, validateAndParseAddress } from 'starknet'
 import { ADDRESS_ZORE } from '../constants'
 
 export async function sleep(ms: number) {
@@ -103,6 +103,14 @@ export function isDevelopEnv() {
 export function getProviderFromEnv() {
   return new Provider({
     sequencer: { network: isDevelopEnv() ? 'goerli-alpha' : 'mainnet-alpha' },
+  })
+}
+
+export function getRpcProviderFromEnv() {
+  return new RpcProvider({
+    nodeUrl: isDevelopEnv()
+      ? 'https://starknet-testnet.public.blastapi.io'
+      : 'https://starknet-mainnet.public.blastapi.io',
   })
 }
 
