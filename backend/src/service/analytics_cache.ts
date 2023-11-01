@@ -1,10 +1,11 @@
-import dayjs from 'dayjs';
+import dayjs from 'dayjs'
 import { AnalyticsService } from './analytics'
 import { PoolService } from './pool'
+import { Core } from '../util/core'
 
 export class AnalyticsServiceCache {
   public static cache = {
-    lastUpdateTime: new Date(0),
+    lastUpdateTime: 0, // ms
     tvlsByDay: [] as { date: string; tvl: number }[],
     volumesByDay: [] as { date: string; volume: number }[],
   }
@@ -14,10 +15,18 @@ export class AnalyticsServiceCache {
       return
     }
 
+    const cacheKey = 'analytics_service_cache-cache'
+    const cacheValue = await Core.redis.get(cacheKey)
+
+    if (AnalyticsServiceCache.cache.lastUpdateTime == 0 && cacheValue) {
+      try {
+        AnalyticsServiceCache.cache = JSON.parse(cacheValue)
+      } catch (_) {}
+    }
+
     // Update cache after more than 10 minutes
     if (
-      new Date().getTime() -
-        AnalyticsServiceCache.cache.lastUpdateTime.getTime() <=
+      new Date().getTime() - AnalyticsServiceCache.cache.lastUpdateTime <=
       600000
     ) {
       return
@@ -39,7 +48,12 @@ export class AnalyticsServiceCache {
     AnalyticsServiceCache.cache = {
       tvlsByDay,
       volumesByDay,
-      lastUpdateTime: new Date(),
+      lastUpdateTime: new Date().getTime(),
     }
+    await Core.redis.setex(
+      cacheKey,
+      3_600,
+      JSON.stringify(AnalyticsServiceCache.cache)
+    )
   }
 }
