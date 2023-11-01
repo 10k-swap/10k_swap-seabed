@@ -151,7 +151,7 @@ export function jobPoolCollect(provider: Provider) {
     try {
       await new PoolService(provider).collect()
     } catch (e) {
-      console.warn(e)
+      errorLogger.error('JobPoolCollect failed:', e.message)
     }
   }
 
