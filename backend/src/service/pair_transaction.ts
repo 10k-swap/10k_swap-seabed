@@ -26,10 +26,10 @@ export class PairTransactionService {
     const pairEvents = await this.repoPairEvent.find({
       where: { key_name: In(['Swap', 'Mint', 'Burn']), status: In([0, 2]) },
       // order: { event_time: 'ASC' },
-      take: 2000,
+      take: 200,
     })
 
-    await PromisePool.withConcurrency(50)
+    await PromisePool.withConcurrency(20)
       .for(pairEvents)
       .process(this.purifyOne.bind(this))
   }
@@ -78,7 +78,7 @@ export class PairTransactionService {
       where: { account_address: '' },
       order: { id: 'ASC' },
       select: ['id', 'transaction_hash'],
-      take: 400,
+      take: 200,
     })
 
     const updateAccount = async (
