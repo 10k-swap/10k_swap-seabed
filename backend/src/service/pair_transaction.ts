@@ -94,7 +94,7 @@ export class PairTransactionService {
           return
         }
 
-        accountAddress = addAddressPadding(accountAddress)
+        accountAddress = addAddressPadding(accountAddress).toLocaleLowerCase()
 
         await this.repoPairTransaction.update(pairTransaction.id, {
           account_address: accountAddress,
