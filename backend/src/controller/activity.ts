@@ -18,7 +18,7 @@ export default function (router: KoaRouter<DefaultState, Context>) {
     const interacted = await activityService.interactedByAccount(
       params.account,
       dayjs('2023-11-02T00:00:00Z').unix(),
-      dayjs('2023-11-16T00:00:00Z').unix()
+      dayjs('2023-11-17T00:00:00Z').unix()
     )
 
     restful.json({ interacted })
