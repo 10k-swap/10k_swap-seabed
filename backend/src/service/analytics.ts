@@ -22,13 +22,9 @@ export class AnalyticsService {
     queryBuilder.select(
       `to_char(event_time, 'YYYY-MM-DD') as event_time_day, pair_address, CONCAT(ROUND(SUM(CAST(amount0 as numeric)), 0), '') as sum_amount0, CONCAT(ROUND(SUM(CAST(amount1 as numeric)), 0), '') as sum_amount1, key_name, swap_reverse`
     ) // CONCAT ''. Prevent automatic conversion to scientific notation
-    queryBuilder.where(
-      'key_name IN (:...keynames) AND event_time >= :startTime',
-      {
-        keynames: ['Mint', 'Burn', 'Swap'],
-        startTime: dateFormatNormal(startTime),
-      }
-    )
+    queryBuilder.where('key_name IN (:...keynames)', {
+      keynames: ['Mint', 'Burn', 'Swap'],
+    })
     queryBuilder
       .addGroupBy('event_time_day')
       .addGroupBy('pair_address')
