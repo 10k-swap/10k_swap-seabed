@@ -286,7 +286,6 @@ export class PairTransactionService {
     const one = await this.repoPairTransaction.findOne({
       select: ['id'],
       where: { event_id: pairTransaction.event_id },
-      order: { event_id: 'ASC' },
     })
 
     if (one?.id) {

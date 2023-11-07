@@ -48,7 +48,6 @@ export class StarknetService {
             const one = await this.repoSnBlock.findOne(undefined, {
               select: ['id'],
               where: { block_number: block.block_number },
-              order: { block_number: 'ASC' },
             })
 
             if (one === undefined) {

@@ -46,7 +46,6 @@ export class ActivityService {
           ),
           key_name: 'Swap',
         },
-        order: { event_time: 'ASC' },
       })
 
       accessLogger.info(

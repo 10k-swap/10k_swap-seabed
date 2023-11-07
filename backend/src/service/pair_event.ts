@@ -39,7 +39,6 @@ export class PairEventService {
 
       const one = await this.repoPairEvent.findOne({
         where: { event_id },
-        order: { event_id: 'ASC' },
       })
       if (one) {
         return
