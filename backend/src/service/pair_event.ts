@@ -39,6 +39,7 @@ export class PairEventService {
 
       const one = await this.repoPairEvent.findOne({
         where: { event_id },
+        order: { event_id: 'ASC' },
       })
       if (one) {
         return
@@ -67,11 +68,16 @@ export class PairEventService {
       order: { block_number: 'DESC' },
       select: ['block_number'],
     })
+    const lastSNBlock = await this.repoSnBlock.findOne({
+      select: ['block_number'],
+      order: { block_number: 'DESC' },
+    })
 
     let i = lastPairEvent?.block_number || 4000
-    for (; i <= StarknetService.latestBlockNumber; i++) {
+    for (; i <= (lastSNBlock?.block_number || 0); i++) {
       const snBlock = await this.repoSnBlock.findOne(undefined, {
         where: { block_number: i },
+        order: { block_number: 'ASC' },
       })
       if (snBlock?.block_data === undefined) continue
 
