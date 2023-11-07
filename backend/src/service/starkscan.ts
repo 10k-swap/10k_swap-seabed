@@ -14,8 +14,12 @@ export class StarkscanService {
 
     if (this.provider.chainId === constants.StarknetChainId.MAINNET) {
       this.axiosClient = axios.create({
-        baseURL: 'https://api.starkscan.co',
-        headers,
+        baseURL: 'https://starkscan-graphql.stellate.sh',
+        headers: {
+          ...headers,
+          origin: 'https://starkscan.co',
+          Referer: 'https://starkscan.co/',
+        },
       })
     } else {
       this.axiosClient = axios.create({

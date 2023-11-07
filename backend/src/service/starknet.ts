@@ -50,7 +50,7 @@ export class StarknetService {
               where: { block_number: block.block_number },
             })
 
-            if (one === undefined) {
+            if (!one) {
               await this.repoSnBlock.insert({
                 block_number: block.block_number,
                 block_hash: block.block_hash,

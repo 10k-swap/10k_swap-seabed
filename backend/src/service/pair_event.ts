@@ -38,6 +38,7 @@ export class PairEventService {
       const event_id = `${transaction_hash}_${event_index}`
 
       const one = await this.repoPairEvent.findOne({
+        select: ['id'],
         where: { event_id },
       })
       if (one) {
@@ -68,10 +69,16 @@ export class PairEventService {
       where: {},
       order: { block_number: 'DESC' },
     })
+    const lastSNBlock = await this.repoSnBlock.findOne({
+      select: ['block_number'],
+      where: {},
+      order: { block_number: 'DESC' },
+    })
 
     let i = lastPairEvent?.block_number || 4000
-    for (; i <= StarknetService.latestBlockNumber; i++) {
+    for (; i <= (lastSNBlock?.block_number || 0); i++) {
       const snBlock = await this.repoSnBlock.findOne({
+        select: ['block_data'],
         where: { block_number: i },
       })
       if (snBlock?.block_data === undefined) continue

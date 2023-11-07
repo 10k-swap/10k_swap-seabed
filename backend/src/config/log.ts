@@ -9,13 +9,15 @@ const configure: Configuration = {
       type: 'dateFile',
       filename: path.resolve(logsDir, 'access.log'),
       pattern: 'yyyy-MM-dd',
-      mode: 0o644
+      mode: 0o644,
+      numBackups: 90
     },
     error: {
       type: 'dateFile',
       filename: path.resolve(logsDir, 'error.log'),
       pattern: 'yyyy-MM-dd',
-      mode: 0o644
+      mode: 0o644,
+      numBackups: 90
     },
     console: { type: 'console' },
   },
