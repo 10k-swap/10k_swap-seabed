@@ -24,8 +24,9 @@ export class StarknetService {
   }
 
   async collectSNBlock() {
-    const lastSNBlock = await this.repoSnBlock.findOne(undefined, {
+    const lastSNBlock = await this.repoSnBlock.findOne({
       select: ['block_number'],
+      where: {},
       order: { block_number: 'DESC' },
     })
 
@@ -35,7 +36,6 @@ export class StarknetService {
       bnArray.push(i)
 
       if (i % 10 === 0 || i >= StarknetService.latestBlockNumber) {
-        // TODO: for debug online
         accessLogger.info(`Collect starknet blocks: ${bnArray.join(', ')}`)
 
         const blocks = await Promise.all(
@@ -45,7 +45,7 @@ export class StarknetService {
         // Bulk update the database to prevent missing chunk data when the application is down.
         await Promise.all(
           blocks.map(async (block) => {
-            const one = await this.repoSnBlock.findOne(undefined, {
+            const one = await this.repoSnBlock.findOne({
               select: ['id'],
               where: { block_number: block.block_number },
             })

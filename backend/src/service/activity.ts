@@ -36,7 +36,7 @@ export class ActivityService {
         return true
       }
 
-      const one = await this.repoPairTransaction.findOne(undefined, {
+      const one = await this.repoPairTransaction.findOne({
         select: ['id'],
         where: {
           account_address: account,

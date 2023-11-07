@@ -1,7 +1,8 @@
 import { Redis } from 'ioredis'
-import { Connection } from 'typeorm'
+import { DataSource } from 'typeorm'
 
 export class Core {
-  static db: Connection
+  static db: DataSource
+  static mongodb: DataSource
   static redis: Redis
 }

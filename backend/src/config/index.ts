@@ -9,6 +9,7 @@ if (process.env.NODE_ENV == 'development') {
 import { ListenOptions } from 'net'
 import * as logConfig from './log'
 import * as ormConfig from './orm'
+import * as ormMongoConfig from './orm.mongo'
 import * as redisConfig from './redis'
 import networkConfig from './network'
 import * as contractConfig from './contract'
@@ -24,6 +25,7 @@ const appConfig = {
 export {
   appConfig,
   ormConfig,
+  ormMongoConfig,
   redisConfig,
   logConfig,
   networkConfig,

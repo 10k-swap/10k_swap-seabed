@@ -7,7 +7,7 @@ networks:
 
 volumes:
   db_data:
-
+  mongodb_data:
 
 services:
   backend:
@@ -16,6 +16,7 @@ services:
     environment:
       PROMETHEUS_ALERTMANAGER: '{"api":"http://alertmanager:9093"}' # {"api":"http://alertmanager:9093"}
       DB_HOST: db
+      MONGO_HOST: mongodb
       REDIS_HOST: redis
     env_file:
       - .env
@@ -56,6 +57,20 @@ services:
       - ./postgresql.auto.conf:/var/lib/postgresql/data/postgresql.auto.conf
     ports:
       - ${DB_PORT}:${DB_PORT}
+    restart: always
+    networks:
+      - l0k_swap-network
+
+  mongodb:
+    image: mongo:5.0.22
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: '${MONGODB_USERNAME}'
+      MONGO_INITDB_ROOT_PASSWORD: '${MONGODB_PASSWORD}'
+      MONGO_INITDB_ROOT_DATABASE: '${MONGODB_DATABASE}'
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - ${MONGODB_PORT}:${MONGODB_PORT}
     restart: always
     networks:
       - l0k_swap-network

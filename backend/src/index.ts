@@ -5,8 +5,8 @@ import koaBodyparser from 'koa-bodyparser'
 import cors from 'koa2-cors'
 import 'reflect-metadata'
 import semver from 'semver'
-import { createConnection } from 'typeorm'
-import { appConfig, ormConfig, redisConfig } from './config'
+import { DataSource } from 'typeorm'
+import { appConfig, ormConfig, ormMongoConfig, redisConfig } from './config'
 import controller from './controller'
 import middlewareGlobal from './middleware/global'
 import { startMasterJobs, startWorkerJobs } from './schedule'
@@ -58,9 +58,17 @@ const main = async () => {
     for (let index = 1; index <= reconnectTotal; index++) {
       try {
         // db bind
-        Core.db = await createConnection(ormConfig.options)
+        Core.db = new DataSource(ormConfig.options)
+        await Core.db.initialize()
         accessLogger.info(
-          `process: ${process.pid}. Connect to the database succeed!`
+          `process: ${process.pid}. Connect to the pg database succeed!`
+        )
+
+        // mongodb bind
+        Core.mongodb = new DataSource(ormMongoConfig.options)
+        await Core.mongodb.initialize()
+        accessLogger.info(
+          `process: ${process.pid}. Connect to the mongo database succeed!`
         )
 
         // Break if connected

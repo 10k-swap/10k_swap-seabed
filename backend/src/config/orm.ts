@@ -1,8 +1,8 @@
 import path from 'path'
-import { ConnectionOptions } from 'typeorm'
+import { DataSourceOptions } from 'typeorm'
 import { isDevelopEnv } from '../util'
 
-export const options: ConnectionOptions = {
+export const options: DataSourceOptions = {
   type: 'postgres',
   host: process.env.DB_HOST || '127.0.0.1',
   port: Number(process.env.DB_PORT) || 3306,
@@ -14,7 +14,7 @@ export const options: ConnectionOptions = {
   extra: {},
   maxQueryExecutionTime: 2000, // Show slow query
 
-  entities: [path.resolve(__dirname, '..', 'model', '**', '*.{ts,js}')],
+  entities: [path.resolve(__dirname, '..', 'model', '*.{ts,js}')],
   migrations: [
     //   'src/migration/**/*.ts'
   ],
