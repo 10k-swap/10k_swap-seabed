@@ -1,7 +1,7 @@
 import dayjs from 'dayjs'
 import { utils } from 'ethers'
 import { number as sNumber } from 'starknet'
-import { Repository } from 'typeorm'
+import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm'
 import { PairTransaction } from '../model/pair_transaction'
 import { dateFormatNormal } from '../util'
 import { Core } from '../util/core'
@@ -271,18 +271,28 @@ export class AnalyticsService {
     }
 
     // QueryBuilder
-    const queryBuilder = this.repoPairTransaction.createQueryBuilder()
-    if (startTime > 0) {
-      queryBuilder.andWhere('event_time >= :startTimeFormat', {
-        startTimeFormat: dateFormatNormal(startTime * 1000),
-      })
-    }
-    if (endTime > 0) {
-      queryBuilder.andWhere('event_time <= :endTimeFormat', {
-        endTimeFormat: dateFormatNormal(endTime * 1000),
-      })
-    }
-    const total = await queryBuilder.getCount()
+    const [startOne, endOne] = await Promise.all([
+      this.repoPairTransaction.findOne(undefined, {
+        where:
+          startTime > 0
+            ? {
+                event_time: MoreThanOrEqual(dateFormatNormal(startTime * 1000)),
+              }
+            : undefined,
+        order: { event_time: 'ASC' },
+      }),
+      this.repoPairTransaction.findOne(undefined, {
+        where:
+          endTime > 0
+            ? {
+                event_time: LessThanOrEqual(dateFormatNormal(endTime * 1000)),
+              }
+            : undefined,
+        order: { event_time: 'DESC' },
+      }),
+    ])
+    let total = (endOne?.id || 0) - (startOne?.id || 0)
+    if (total < 0) total = 0
 
     return { total, profits }
   }
