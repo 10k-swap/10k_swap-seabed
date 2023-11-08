@@ -25,7 +25,7 @@ export class PairTransactionService {
   async purify() {
     const pairEvents = await this.repoPairEvent.find({
       where: { key_name: In(['Swap', 'Mint', 'Burn']), status: In([0, 2]) },
-      order: { key_name: 'ASC', status: 'ASC' },
+      order: { key_name: 'DESC', status: 'DESC' },
       take: 200,
     })
 
