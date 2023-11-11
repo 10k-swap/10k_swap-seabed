@@ -152,7 +152,7 @@ export class PairTransactionService {
       if (account_address) return account_address
     }
 
-    if (mod === 1 || mod === 2) {
+    if (mod === 1) {
       const voyagerService = new VoyagerService(this.provider)
       const resp = await voyagerService
         .getAxiosClient()
@@ -162,18 +162,7 @@ export class PairTransactionService {
         return resp.data.header.contract_address as string
     }
 
-    // if (mod === 2) {
-    //   const viewblockService = new ViewblockService(this.provider)
-    //   const resp = await viewblockService
-    //     .getAxiosClient()
-    //     .get(`/starknet/txs/${addAddressPadding(transaction_hash)}`)
-
-    //   await sleep(300)
-
-    //   if (resp.data?.sender_address) return resp.data?.sender_address as string
-    // }
-
-    if (mod === 3) {
+    if (mod === 2 || mod === 3) {
       const transaction = await this.provider.getTransaction(transaction_hash)
       const account_address =
         transaction['contract_address'] || transaction['sender_address']
