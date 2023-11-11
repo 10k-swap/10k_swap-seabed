@@ -25,7 +25,7 @@ export class PairTransactionService {
   async purify() {
     const pairEvents = await this.repoPairEvent.find({
       where: { status: In([0, 2]) },
-      take: 200,
+      take: 500,
     })
 
     await PromisePool.withConcurrency(20)
@@ -82,7 +82,7 @@ export class PairTransactionService {
       where: { account_address: '' },
       order: { id: 'ASC' },
       select: ['id', 'transaction_hash'],
-      take: 200,
+      take: 500,
     })
 
     const updateAccount = async (
@@ -144,13 +144,15 @@ export class PairTransactionService {
 
   private totalGroupGetAccountAddress = 5
   private async getAccountAddress(index: number, transaction_hash: string) {
-    if (index % this.totalGroupGetAccountAddress === 0) {
+    const mod = index % this.totalGroupGetAccountAddress
+
+    if (mod === 0) {
       const tx = await this.provider.getTransaction(transaction_hash)
       const account_address = tx.contract_address || tx.sender_address
       if (account_address) return account_address
     }
 
-    if (index % this.totalGroupGetAccountAddress === 1) {
+    if (mod === 1 || mod === 2) {
       const voyagerService = new VoyagerService(this.provider)
       const resp = await voyagerService
         .getAxiosClient()
@@ -160,18 +162,18 @@ export class PairTransactionService {
         return resp.data.header.contract_address as string
     }
 
-    if (index % this.totalGroupGetAccountAddress === 2) {
-      const viewblockService = new ViewblockService(this.provider)
-      const resp = await viewblockService
-        .getAxiosClient()
-        .get(`/starknet/txs/${addAddressPadding(transaction_hash)}`)
+    // if (mod === 2) {
+    //   const viewblockService = new ViewblockService(this.provider)
+    //   const resp = await viewblockService
+    //     .getAxiosClient()
+    //     .get(`/starknet/txs/${addAddressPadding(transaction_hash)}`)
 
-      await sleep(300)
+    //   await sleep(300)
 
-      if (resp.data?.sender_address) return resp.data?.sender_address as string
-    }
+    //   if (resp.data?.sender_address) return resp.data?.sender_address as string
+    // }
 
-    if (index % this.totalGroupGetAccountAddress === 3) {
+    if (mod === 3) {
       const transaction = await this.provider.getTransaction(transaction_hash)
       const account_address =
         transaction['contract_address'] || transaction['sender_address']
