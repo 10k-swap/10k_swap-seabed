@@ -142,7 +142,7 @@ export class PairTransactionService {
       .process(updateAccountGroup.bind(this))
   }
 
-  private totalGroupGetAccountAddress = 5
+  private totalGroupGetAccountAddress = 4
   private async getAccountAddress(index: number, transaction_hash: string) {
     const mod = index % this.totalGroupGetAccountAddress
 
@@ -162,7 +162,7 @@ export class PairTransactionService {
         return resp.data.header.contract_address as string
     }
 
-    if (mod === 2 || mod === 3) {
+    if (mod === 2) {
       const transaction = await this.provider.getTransaction(transaction_hash)
       const account_address =
         transaction['contract_address'] || transaction['sender_address']
