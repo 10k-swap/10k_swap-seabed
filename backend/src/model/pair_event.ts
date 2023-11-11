@@ -38,5 +38,5 @@ export class PairEvent extends CommonEntity {
   source_data: string
 
   @Column('int2', { default: 0 })
-  status: number // 0: not purify, 1: purified, 2: purify failed
+  status: number // 0: not purify, 1: purified, 2: purify failed, 99: no need to purify
 }

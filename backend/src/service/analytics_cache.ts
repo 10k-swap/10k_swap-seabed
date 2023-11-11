@@ -24,10 +24,10 @@ export class AnalyticsServiceCache {
       } catch (_) {}
     }
 
-    // Update cache after more than 10 minutes
+    // Update cache after more than 1 hour
     if (
       new Date().getTime() - AnalyticsServiceCache.cache.lastUpdateTime <=
-      600000
+      3600000
     ) {
       return
     }

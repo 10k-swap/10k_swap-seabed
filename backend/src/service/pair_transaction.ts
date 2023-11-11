@@ -24,8 +24,7 @@ export class PairTransactionService {
 
   async purify() {
     const pairEvents = await this.repoPairEvent.find({
-      where: { key_name: In(['Swap', 'Mint', 'Burn']), status: In([0, 2]) },
-      order: { key_name: 'DESC', status: 'DESC' },
+      where: { status: In([0, 2]) },
       take: 200,
     })
 
@@ -57,6 +56,11 @@ export class PairTransactionService {
         case 'Burn':
           await this.eventBurn(pairEvent, pairTransaction)
           break
+        default:
+          errorLogger.error(
+            `Invalid key_name: ${pairEvent.key_name}, transaction_hash: ${pairEvent.transaction_hash}`
+          )
+          return
       }
 
       await this.updateOrInsert(pairTransaction)

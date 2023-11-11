@@ -3,7 +3,15 @@ import { PairEvent } from '../model/pair_event'
 import { SnBlock } from '../model/sn_block'
 import { Core } from '../util/core'
 import { Pair, PoolService } from './pool'
-import { StarknetService } from './starknet'
+
+const keyNames = {
+  [hash.getSelectorFromName('Approval')]: 'Approval',
+  [hash.getSelectorFromName('Burn')]: 'Burn',
+  [hash.getSelectorFromName('Mint')]: 'Mint',
+  [hash.getSelectorFromName('Swap')]: 'Swap',
+  [hash.getSelectorFromName('Sync')]: 'Sync',
+  [hash.getSelectorFromName('Transfer')]: 'Transfer',
+}
 
 export class PairEventService {
   private static pairCursors: { [key: string]: string } = {}
@@ -17,15 +25,6 @@ export class PairEventService {
   async startWork() {
     if (PoolService.pairs.length < 1) {
       return
-    }
-
-    const keyNames = {
-      [hash.getSelectorFromName('Approval')]: 'Approval',
-      [hash.getSelectorFromName('Burn')]: 'Burn',
-      [hash.getSelectorFromName('Mint')]: 'Mint',
-      [hash.getSelectorFromName('Swap')]: 'Swap',
-      [hash.getSelectorFromName('Sync')]: 'Sync',
-      [hash.getSelectorFromName('Transfer')]: 'Transfer',
     }
 
     const saveWhenNoExist = async (data: any) => {
@@ -60,6 +59,12 @@ export class PairEventService {
       pairEvent.event_time = new Date(data.timestamp * 1000)
       pairEvent.cursor = cursor
       pairEvent.source_data = JSON.stringify(data)
+      pairEvent.status = 0
+
+      if (['Swap', 'Mint', 'Burn'].indexOf(pairEvent.key_name) === -1) {
+        pairEvent.status = 99
+      }
+
       return this.repoPairEvent.save(pairEvent)
     }
 
