@@ -1,4 +1,4 @@
-import { getProviderFromEnv, isDevelopEnv } from '../util'
+import { isDevelopEnv } from '../util'
 import {
   jobCacheTVLsByDayAndVolumesByDay,
   jobCoinbaseCache,
@@ -15,18 +15,16 @@ export const startMasterJobs = async () => {
   // Only develop env
   if (isDevelopEnv()) jobFaucetTwitter()
 
-  const provider = getProviderFromEnv()
-
-  jobPoolCollect(provider)
+  jobPoolCollect()
 
   jobCoinbaseCache()
 
-  jobUpdateLatestBlockNumber(provider)
-  jobCollectSNBlock(provider)
+  jobUpdateLatestBlockNumber()
+  jobCollectSNBlock()
 
-  jobPairEventStartWork(provider)
-  jobPairTransactionPurify(provider)
-  jobPairTransactionAccountAddress(provider)
+  jobPairEventStartWork()
+  jobPairTransactionPurify()
+  jobPairTransactionAccountAddress()
 
   jobCacheTVLsByDayAndVolumesByDay()
 }

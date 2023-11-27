@@ -1,8 +1,9 @@
-import { Provider, hash, number as sNumber } from 'starknet'
+import { hash, num } from 'starknet'
 import { PairEvent } from '../model/pair_event'
 import { SnBlock } from '../model/sn_block'
 import { Core } from '../util/core'
 import { Pair, PoolService } from './pool'
+import { get10kStartBlockByEnv } from '../util'
 
 const keyNames = {
   [hash.getSelectorFromName('Approval')]: 'Approval',
@@ -17,7 +18,6 @@ export class PairEventService {
   private static pairCursors: { [key: string]: string } = {}
 
   constructor(
-    private provider: Provider,
     private repoPairEvent = Core.db.getRepository(PairEvent),
     private repoSnBlock = Core.db.getRepository(SnBlock)
   ) {}
@@ -77,7 +77,7 @@ export class PairEventService {
       order: { block_number: 'DESC' },
     })
 
-    let i = lastPairEvent?.block_number || 4000
+    let i = lastPairEvent?.block_number || get10kStartBlockByEnv()
     for (; i <= (lastSNBlock?.block_number || 0); i++) {
       const snBlock = await this.repoSnBlock.findOne(undefined, {
         where: { block_number: i },
@@ -101,9 +101,11 @@ export class PairEventService {
         for (const eventIndex in item.events) {
           const event = item.events[eventIndex]
 
-          const targetPair = PoolService.pairs.find((p) =>
-            sNumber.toBN(event.from_address).eq(sNumber.toBN(p.pairAddress))
+          const targetPair = PoolService.pairs.find(
+            (p) =>
+              num.toBigInt(event.from_address) == num.toBigInt(p.pairAddress)
           )
+
           if (targetPair === undefined) continue
 
           const key = event.keys.find((k) => keyNames[k] !== undefined)

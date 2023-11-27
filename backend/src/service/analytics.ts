@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import { utils } from 'ethers'
-import { number as sNumber } from 'starknet'
+import { BigNumberish } from 'starknet'
 import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm'
 import { PairTransaction } from '../model/pair_transaction'
 import { dateFormatNormal } from '../util'
@@ -217,7 +217,7 @@ export class AnalyticsService {
           pair.token1.decimals
         )
 
-        if (sNumber.toBN(item.fee).gtn(0)) {
+        if (BigInt(item.fee) > 0n) {
           const coinbaseService = new CoinbaseService()
           const [_decimals, _symbol] =
             item.swap_reverse === 0
@@ -256,10 +256,10 @@ export class AnalyticsService {
       const targetProfit = profits.find(
         (profit) => profit.address == feeToken.address
       )
-      const amount = sNumber.toBN(item.sum_fee + '')
+      const amount = BigInt(item.sum_fee)
 
       if (targetProfit) {
-        targetProfit.amount = amount.add(sNumber.toBN(targetProfit.amount)) + ''
+        targetProfit.amount = amount + BigInt(targetProfit.amount) + ''
         targetProfit.amountHuman = utils.formatUnits(
           targetProfit.amount,
           feeToken.decimals
@@ -534,8 +534,8 @@ export class AnalyticsService {
   }
 
   private async getPairVolumeForUsd(
-    amount0: sNumber.BigNumberish | undefined,
-    amount1: sNumber.BigNumberish | undefined,
+    amount0: BigNumberish | undefined,
+    amount1: BigNumberish | undefined,
     pair: Pair,
     swap_reverse: number
   ) {
@@ -549,8 +549,8 @@ export class AnalyticsService {
   }
 
   private async amount0AddAmount1ForUsd(
-    amount0: sNumber.BigNumberish | undefined,
-    amount1: sNumber.BigNumberish | undefined,
+    amount0: BigNumberish | undefined,
+    amount1: BigNumberish | undefined,
     pair: Pair
   ) {
     const coinbaseService = new CoinbaseService()

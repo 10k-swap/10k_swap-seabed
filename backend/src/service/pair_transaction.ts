@@ -1,23 +1,21 @@
 import { PromisePool } from '@supercharge/promise-pool'
-import { addAddressPadding, Provider, uint256 } from 'starknet'
+import { addAddressPadding, uint256 } from 'starknet'
 import { In, Repository } from 'typeorm'
 import { PairEvent } from '../model/pair_event'
 import { PairTransaction } from '../model/pair_transaction'
-import { getRpcProviderFromEnv, sleep } from '../util'
+import { getRpcProviderByEnv } from '../util'
 import { Core } from '../util/core'
 import { errorLogger } from '../util/logger'
-import { ViewblockService } from './viewblock'
 import { VoyagerService } from './voyager'
+import { RpcsService } from './rpcs'
 
 const TRANSACTION_FEE_RATIO = 3
 
 export class PairTransactionService {
-  private provider: Provider
   private repoPairEvent: Repository<PairEvent>
   private repoPairTransaction: Repository<PairTransaction>
 
-  constructor(provider: Provider) {
-    this.provider = provider
+  constructor() {
     this.repoPairEvent = Core.db.getRepository(PairEvent)
     this.repoPairTransaction = Core.db.getRepository(PairTransaction)
   }
@@ -147,13 +145,7 @@ export class PairTransactionService {
     const mod = index % this.totalGroupGetAccountAddress
 
     if (mod === 0) {
-      const tx = await this.provider.getTransaction(transaction_hash)
-      const account_address = tx.contract_address || tx.sender_address
-      if (account_address) return account_address
-    }
-
-    if (mod === 1) {
-      const voyagerService = new VoyagerService(this.provider)
+      const voyagerService = new VoyagerService()
       const resp = await voyagerService
         .getAxiosClient()
         .get(`/api/txn/${transaction_hash}`)
@@ -162,16 +154,16 @@ export class PairTransactionService {
         return resp.data.header.contract_address as string
     }
 
-    if (mod === 2) {
-      const transaction = await this.provider.getTransaction(transaction_hash)
-      const account_address =
-        transaction['contract_address'] || transaction['sender_address']
-
-      if (account_address) return account_address
+    // Rpc provider ⬇⬇⬇
+    const rpcsService = new RpcsService()
+    let rpcProvider = rpcsService.blastRpcProvider()
+    if (mod == 1) {
+      rpcProvider = rpcsService.lavaRpcProvider()
+    }
+    if (mod == 2) {
+      rpcProvider = rpcsService.nethermindRpcProvider()
     }
 
-    // Rpc provider ⬇⬇⬇
-    const rpcProvider = getRpcProviderFromEnv()
     const transaction = await rpcProvider.getTransactionByHash(transaction_hash)
     const account_address = (transaction['contract_address'] ||
       transaction['sender_address'] ||
@@ -212,22 +204,18 @@ export class PairTransactionService {
       high: eventData[8],
     })
 
-    if (amount0In.gtn(0)) {
+    if (amount0In > 0n) {
       pairTransaction.amount0 = amount0In.toString()
       pairTransaction.amount1 = amount1Out.toString()
       pairTransaction.swap_reverse = 0
-      pairTransaction.fee = amount0In
-        .muln(TRANSACTION_FEE_RATIO)
-        .divn(1000)
-        .toString()
+      pairTransaction.fee =
+        (amount0In * BigInt(TRANSACTION_FEE_RATIO)) / 1000n + ''
     } else {
       pairTransaction.amount0 = amount0Out.toString()
       pairTransaction.amount1 = amount1In.toString()
       pairTransaction.swap_reverse = 1
-      pairTransaction.fee = amount1In
-        .muln(TRANSACTION_FEE_RATIO)
-        .divn(1000)
-        .toString()
+      pairTransaction.fee =
+        (amount1In * BigInt(TRANSACTION_FEE_RATIO)) / 1000n + ''
     }
   }
 

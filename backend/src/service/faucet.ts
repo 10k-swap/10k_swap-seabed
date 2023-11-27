@@ -1,10 +1,10 @@
 import { utils } from 'ethers'
-import { Abi, Account, Call, ec, Provider, number as sNumber, uint256 } from 'starknet'
+import { Abi, Account, Call, num, uint256 } from 'starknet'
 import { In } from 'typeorm'
 import { faucetConfig } from '../config'
 import erc20 from '../config/abis/erc20.json'
 import { TwitterCrawl } from '../model/twitter_crawl'
-import { isAddress, sleep } from '../util'
+import { getRpcProviderByEnv, isAddress, sleep } from '../util'
 import { Core } from '../util/core'
 import { accessLogger, errorLogger } from '../util/logger'
 
@@ -105,9 +105,10 @@ export class FaucetService {
     const { aAddress, aAmount, bAddress, bAmount, ethAddress, ethAmount } =
       faucetConfig
 
-    const a = uint256.bnToUint256(sNumber.toBN(aAmount.toString()))
-    const b = uint256.bnToUint256(sNumber.toBN(bAmount.toString()))
-    const eth = uint256.bnToUint256(sNumber.toBN(ethAmount.toString()))
+    // TODO: Test
+    const a = uint256.bnToUint256(aAmount.toString())
+    const b = uint256.bnToUint256(bAmount.toString())
+    const eth = uint256.bnToUint256(ethAmount.toString())
 
     const calls: Call[] = []
     const abis: Abi[] = []
@@ -144,8 +145,6 @@ export class FaucetService {
   }
 
   private getAccounts() {
-    const provider = new Provider({ sequencer: { network: 'goerli-alpha' } })
-
     const accounts: Account[] = []
 
     for (const i in faucetConfig.privateKeys) {
@@ -155,9 +154,14 @@ export class FaucetService {
         continue
       }
 
-      const pk = sNumber.toHex(sNumber.toBN(privateKey))
-      const keyPair = ec.getKeyPair(pk)
-      accounts.push(new Account(provider, address.toLowerCase(), keyPair))
+      // TODO: test
+      accounts.push(
+        new Account(
+          getRpcProviderByEnv(),
+          address.toLowerCase(),
+          num.toHex(privateKey)
+        )
+      )
     }
     return accounts
   }

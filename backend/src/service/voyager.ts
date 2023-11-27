@@ -1,17 +1,17 @@
 import axios, { AxiosInstance } from 'axios'
 import axiosRetry from 'axios-retry'
-import { Provider, constants } from 'starknet'
+import { isDevelopEnv } from '../util'
 
 export class VoyagerService {
   private axiosClient: AxiosInstance
 
-  constructor(private provider: Provider) {
-    if (this.provider.chainId === constants.StarknetChainId.MAINNET) {
-      this.axiosClient = axios.create({ baseURL: 'https://voyager.online' })
-    } else {
+  constructor() {
+    if (isDevelopEnv()) {
       this.axiosClient = axios.create({
         baseURL: 'https://goerli.voyager.online',
       })
+    } else {
+      this.axiosClient = axios.create({ baseURL: 'https://voyager.online' })
     }
     axiosRetry(this.axiosClient, { retries: 3 })
   }

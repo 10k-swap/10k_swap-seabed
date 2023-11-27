@@ -1,13 +1,12 @@
 import schedule from 'node-schedule'
-import { Provider } from 'starknet'
+import { AnalyticsServiceCache } from '../service/analytics_cache'
 import { CoinbaseService } from '../service/coinbase'
 import { FaucetService } from '../service/faucet'
 import { PairEventService } from '../service/pair_event'
 import { PairTransactionService } from '../service/pair_transaction'
 import { PoolService } from '../service/pool'
-import { errorLogger } from '../util/logger'
-import { AnalyticsServiceCache } from '../service/analytics_cache'
 import { StarknetService } from '../service/starknet'
+import { errorLogger } from '../util/logger'
 
 // import { doSms } from '../sms/smsSchinese'
 class MJob {
@@ -110,9 +109,9 @@ export function jobCoinbaseCache() {
   )
 }
 
-export function jobPairEventStartWork(provider: Provider) {
+export function jobPairEventStartWork() {
   const callback = async () => {
-    await new PairEventService(provider).startWork()
+    await new PairEventService().startWork()
   }
 
   new MJobPessimism(
@@ -122,9 +121,9 @@ export function jobPairEventStartWork(provider: Provider) {
   ).schedule()
 }
 
-export function jobPairTransactionPurify(provider: Provider) {
+export function jobPairTransactionPurify() {
   const callback = async () => {
-    await new PairTransactionService(provider).purify()
+    await new PairTransactionService().purify()
   }
 
   new MJobPessimism(
@@ -134,9 +133,9 @@ export function jobPairTransactionPurify(provider: Provider) {
   ).schedule()
 }
 
-export function jobPairTransactionAccountAddress(provider: Provider) {
+export function jobPairTransactionAccountAddress() {
   const callback = async () => {
-    await new PairTransactionService(provider).purifyAccountAddress()
+    await new PairTransactionService().purifyAccountAddress()
   }
 
   new MJobPessimism(
@@ -146,13 +145,9 @@ export function jobPairTransactionAccountAddress(provider: Provider) {
   ).schedule()
 }
 
-export function jobPoolCollect(provider: Provider) {
+export function jobPoolCollect() {
   const callback = async () => {
-    try {
-      await new PoolService(provider).collect()
-    } catch (e) {
-      errorLogger.error('JobPoolCollect failed:', e.message)
-    }
+    await new PoolService().collect()
   }
 
   new MJobPessimism('*/5 * * * * *', callback, jobPoolCollect.name).schedule(
@@ -173,9 +168,9 @@ export function jobCacheTVLsByDayAndVolumesByDay() {
   ).schedule()
 }
 
-export function jobUpdateLatestBlockNumber(provider: Provider) {
+export function jobUpdateLatestBlockNumber() {
   const callback = async () => {
-    await new StarknetService(provider).updateLatestBlockNumber()
+    await new StarknetService().updateLatestBlockNumber()
   }
 
   new MJobPessimism(
@@ -185,9 +180,9 @@ export function jobUpdateLatestBlockNumber(provider: Provider) {
   ).schedule(true)
 }
 
-export function jobCollectSNBlock(provider: Provider) {
+export function jobCollectSNBlock() {
   const callback = async () => {
-    await new StarknetService(provider).collectSNBlock()
+    await new StarknetService().collectSNBlock()
   }
 
   new MJobPessimism(

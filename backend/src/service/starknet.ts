@@ -1,21 +1,18 @@
-import { GetBlockResponse, Provider } from 'starknet'
+import { GetBlockResponse, RPC } from 'starknet'
 import { SnBlock } from '../model/sn_block'
-import { sleep } from '../util'
+import { get10kStartBlockByEnv, getRpcProviderByEnv, sleep } from '../util'
 import { Core } from '../util/core'
 import { accessLogger } from '../util/logger'
 
 export class StarknetService {
   public static latestBlockNumber = 0
 
-  constructor(
-    private provider: Provider,
-    private repoSnBlock = Core.db.getRepository(SnBlock)
-  ) {}
+  constructor(private repoSnBlock = Core.db.getRepository(SnBlock)) {}
 
   async updateLatestBlockNumber() {
-    const { block_number } = await this.getSNBlockInfo('latest')
+    const { block_number } =
+      await getRpcProviderByEnv().getBlockLatestAccepted()
 
-    // TODO: for debug online
     accessLogger.info(`Block_number: ${block_number}`)
 
     if (block_number > StarknetService.latestBlockNumber) {
@@ -30,16 +27,15 @@ export class StarknetService {
     })
 
     let bnArray: number[] = []
-    let i = (lastSNBlock?.block_number || -1) + 1
+    let i = (lastSNBlock?.block_number || get10kStartBlockByEnv()) + 1
     for (; i <= StarknetService.latestBlockNumber; i++) {
       bnArray.push(i)
 
       if (i % 10 === 0 || i >= StarknetService.latestBlockNumber) {
-        // TODO: for debug online
         accessLogger.info(`Collect starknet blocks: ${bnArray.join(', ')}`)
 
         const blocks = await Promise.all(
-          bnArray.map((item) => this.getSNBlockInfo(item))
+          bnArray.map((item) => this.getStarknetBlockInfo(item))
         )
 
         // Bulk update the database to prevent missing chunk data when the application is down.
@@ -65,22 +61,89 @@ export class StarknetService {
     }
   }
 
-  async getSNBlockInfo(
-    blockNumber: number | string,
+  async getStarknetBlockInfo(
+    blockNumber: number,
     tryCount = 0
   ): Promise<GetBlockResponse> {
     try {
-      return await new Promise((resolve, reject) => {
+      return await new Promise(async (resolve, reject) => {
         const timeoutId = setTimeout(function () {
           reject(new Error('Timeout Error'))
-        }, 3000)
-        this.provider
-          .getBlock(blockNumber)
-          .then((res) => {
-            clearTimeout(timeoutId)
-            resolve(res)
+        }, 30000)
+
+        try {
+          const rpcProvider = getRpcProviderByEnv()
+          const r = await rpcProvider.getBlockWithTxHashes(blockNumber)
+
+          let events: RPC.SPEC.EMITTED_EVENT[] = []
+          let continuationToken: string | undefined = undefined
+
+          while (true) {
+            const result = await this.getStarknetBlockEvents(
+              blockNumber,
+              continuationToken
+            )
+            events = events.concat(result.events)
+
+            if (result.continuation_token === undefined) {
+              break
+            }
+            continuationToken = result.continuation_token
+          }
+
+          const transaction_receipts: any[] = []
+          r.transactions.forEach((hash, index) => {
+            transaction_receipts.push({
+              transaction_index: index,
+              transaction_hash: hash,
+              events: events.filter((e) => e.transaction_hash == hash),
+            })
           })
-          .catch(reject)
+          r['transaction_receipts'] = transaction_receipts
+
+          resolve(r as GetBlockResponse)
+          clearTimeout(timeoutId)
+        } catch (err) {
+          reject(err)
+        }
+      })
+    } catch (err) {
+      tryCount += 1
+
+      if (tryCount > 10) throw err
+
+      // Exponential Avoidance
+      const ms = parseInt(tryCount * tryCount * 200 + '')
+      await sleep(ms <= 5000 ? ms : 5000) // max: 5000ms
+
+      return await this.getStarknetBlockInfo(blockNumber, tryCount)
+    }
+  }
+
+  async getStarknetBlockEvents(
+    blockNumber: number,
+    continuationToken: string | undefined = undefined,
+    tryCount = 0
+  ): Promise<RPC.SPEC.EVENTS_CHUNK> {
+    try {
+      return await new Promise(async (resolve, reject) => {
+        const timeoutId = setTimeout(function () {
+          reject(new Error('Timeout Error'))
+        }, 10000)
+
+        try {
+          const result = await getRpcProviderByEnv().getEvents({
+            from_block: { block_number: blockNumber },
+            to_block: { block_number: blockNumber },
+            chunk_size: 1000,
+            continuation_token: continuationToken,
+          })
+
+          resolve(result)
+          clearTimeout(timeoutId)
+        } catch (err) {
+          reject(err)
+        }
       })
     } catch (err) {
       tryCount += 1
@@ -90,7 +153,11 @@ export class StarknetService {
       const ms = parseInt(tryCount * tryCount * 200 + '')
       await sleep(ms <= 5000 ? ms : 5000) // max: 5000ms
 
-      return await this.getSNBlockInfo(blockNumber, tryCount)
+      return await this.getStarknetBlockEvents(
+        blockNumber,
+        continuationToken,
+        tryCount
+      )
     }
   }
 }

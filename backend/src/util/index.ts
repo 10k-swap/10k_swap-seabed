@@ -1,6 +1,13 @@
 import dayjs from 'dayjs'
-import { Provider, RpcProvider, validateAndParseAddress } from 'starknet'
+import {
+  BigNumberish,
+  Provider,
+  constants,
+  num,
+  validateAndParseAddress,
+} from 'starknet'
 import { ADDRESS_ZORE } from '../constants'
+import { RpcsService } from '../service/rpcs'
 
 export async function sleep(ms: number) {
   return new Promise((resolve) => {
@@ -100,20 +107,32 @@ export function isDevelopEnv() {
   return productEnv.toLowerCase() != 'production'
 }
 
-export function getProviderFromEnv() {
+/**
+ * @deprecated
+ * @returns
+ */
+export function getProviderByEnv() {
   return new Provider({
-    sequencer: { network: isDevelopEnv() ? 'goerli-alpha' : 'mainnet-alpha' },
+    sequencer: {
+      network: isDevelopEnv()
+        ? constants.StarknetChainId.SN_GOERLI
+        : constants.StarknetChainId.SN_MAIN,
+    },
   })
 }
 
-export function getRpcProviderFromEnv() {
-  return new RpcProvider({
-    nodeUrl: isDevelopEnv()
-      ? 'https://starknet-testnet.public.blastapi.io'
-      : 'https://starknet-mainnet.public.blastapi.io',
-  })
+export function getRpcProviderByEnv() {
+  return new RpcsService().blastRpcProvider()
 }
 
 export function isRpcTooManyRequests(err: Error) {
   return /(Too Many Requests)/gi.test(err.message)
+}
+
+export function bigNumberishToUtf8(value: BigNumberish) {
+  return Buffer.from(num.hexToBytes(num.toHex(value))).toString('utf-8')
+}
+
+export function get10kStartBlockByEnv() {
+  return isDevelopEnv() ? 317000 : 4000
 }

@@ -8,7 +8,7 @@ export class SnBlock extends CommonEntity {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
   id: number
 
-  @Column('int', { width: 11,  unique: true })
+  @Column('int', { width: 11, unique: true })
   block_number: number
 
   @Column('varchar', { length: 256 })
