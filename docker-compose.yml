@@ -32,9 +32,10 @@ services:
     command: ./twitter-crawl
     environment:
       DB_HOST: db
-      TWEET_QUERY: '10Kswap'
     env_file:
       - .env
+    volumes:
+      - './twitter-crawl/.cookies:/app/.cookies'
     restart: always
     networks:
       - l0k_swap-network

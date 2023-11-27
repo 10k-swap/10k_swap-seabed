@@ -18,6 +18,7 @@ local.*
 .data/
 .vscode
 redis/
+.cookies/
 
 # nginx ssl
 nginx.domain.key
