@@ -3,7 +3,7 @@ import { addAddressPadding, uint256 } from 'starknet'
 import { In, Repository } from 'typeorm'
 import { PairEvent } from '../model/pair_event'
 import { PairTransaction } from '../model/pair_transaction'
-import { getRpcProviderByEnv } from '../util'
+import { getRpcProviderByEnv, sleep } from '../util'
 import { Core } from '../util/core'
 import { errorLogger } from '../util/logger'
 import { VoyagerService } from './voyager'
@@ -165,13 +165,16 @@ export class PairTransactionService {
     }
 
     const transaction = await rpcProvider.getTransactionByHash(transaction_hash)
-    const account_address = (transaction['contract_address'] ||
-      transaction['sender_address'] ||
-      '') as string
+    const account_address = transaction
+      ? ((transaction['contract_address'] ||
+          transaction['sender_address'] ||
+          '') as string)
+      : ''
     if (!account_address) {
       errorLogger.error(
-        `Response miss contract_address. transaction_hash: ${transaction_hash}.`
+        `Response miss contract_address. transaction_hash: ${transaction_hash}. index: ${index}`
       )
+      await sleep(2000)
     }
 
     return account_address
