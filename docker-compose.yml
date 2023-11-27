@@ -8,7 +8,6 @@ networks:
 volumes:
   db_data:
 
-
 services:
   backend:
     build: ./backend
@@ -33,12 +32,9 @@ services:
     command: ./twitter-crawl
     environment:
       DB_HOST: db
-      DB_PORT: '${DB_PORT}'
-      DB_USER: '${DB_USER}'
-      DB_PASSWORD: '${DB_PASSWORD}'
-      DB_NAME: '${DB_NAME}'
       TWEET_QUERY: '10Kswap'
-      PRODUCT_ENV: '${PRODUCT_ENV}'
+    env_file:
+      - .env
     restart: always
     networks:
       - l0k_swap-network

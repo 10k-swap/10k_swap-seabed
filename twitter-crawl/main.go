@@ -11,21 +11,22 @@ import (
 	"github.com/0x60018/10k_swap-seabed/twitter-crawl/model"
 	"github.com/joho/godotenv"
 	twitterscraper "github.com/n0madic/twitter-scraper"
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func connectDB() (db *gorm.DB) {
+	TZ := os.Getenv("TZ")
 	DB_HOST := os.Getenv("DB_HOST")
 	DB_NAME := os.Getenv("DB_NAME")
 	DB_PORT := os.Getenv("DB_PORT")
 	DB_USER := os.Getenv("DB_USER")
 	DB_PASSWORD := os.Getenv("DB_PASSWORD")
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME)
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=%s", DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT, TZ)
 	log.Println("dsn:", dsn)
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err.Error())
 	}
