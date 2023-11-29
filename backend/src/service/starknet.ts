@@ -70,13 +70,16 @@ export class StarknetService {
       return await new Promise(async (resolve, reject) => {
         const timeoutId = setTimeout(function () {
           reject(new Error('Timeout Error'))
-        }, 30000)
+        }, 100000)
+
+        const rpcProvider = RpcsService.createRandomRpcProvider()
 
         try {
-          const rpcProvider = RpcsService.createRandomRpcProvider()
           const r = await rpcProvider.getBlockWithTxHashes(blockNumber)
           if (!r) {
-            throw new Error(`GetBlockWithTxHashes[${blockNumber}] failed.`)
+            throw new Error(
+              `GetBlockWithTxHashes[${blockNumber}] failed, rpc: ${rpcProvider.nodeUrl}`
+            )
           }
 
           let events: RPC.SPEC.EMITTED_EVENT[] = []
@@ -106,10 +109,11 @@ export class StarknetService {
           r['transaction_receipts'] = transaction_receipts
 
           resolve(r as GetBlockResponse)
-          clearTimeout(timeoutId)
         } catch (err) {
           reject(err)
         }
+
+        clearTimeout(timeoutId)
       })
     } catch (err) {
       tryCount += 1
@@ -133,21 +137,29 @@ export class StarknetService {
       return await new Promise(async (resolve, reject) => {
         const timeoutId = setTimeout(function () {
           reject(new Error('Timeout Error'))
-        }, 10000)
+        }, 30000)
+
+        const rpcProvider = RpcsService.createRandomRpcProvider()
 
         try {
-          const result = await RpcsService.createRandomRpcProvider().getEvents({
+          const result = await rpcProvider.getEvents({
             from_block: { block_number: blockNumber },
             to_block: { block_number: blockNumber },
             chunk_size: 1000,
             continuation_token: continuationToken,
           })
+          if (!result) {
+            throw new Error(
+              `GetStarknetBlockEvents[${blockNumber}] failed, rpc: ${rpcProvider.nodeUrl}`
+            )
+          }
 
           resolve(result)
-          clearTimeout(timeoutId)
         } catch (err) {
           reject(err)
         }
+
+        clearTimeout(timeoutId)
       })
     } catch (err) {
       tryCount += 1

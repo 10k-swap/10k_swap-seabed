@@ -31,11 +31,11 @@ export class RpcsService {
     const rpcsService = new RpcsService()
     switch (random) {
       case 0:
-        return rpcsService.blastRpcProvider()
+      // return rpcsService.alchemyRpcProvider()
       case 1:
-        return rpcsService.lavaRpcProvider()
-      default:
         return rpcsService.nethermindRpcProvider()
+      default:
+        return rpcsService.blastRpcProvider()
     }
   }
 }

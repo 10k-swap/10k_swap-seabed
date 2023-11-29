@@ -3,11 +3,11 @@ import { addAddressPadding, uint256 } from 'starknet'
 import { In, Repository } from 'typeorm'
 import { PairEvent } from '../model/pair_event'
 import { PairTransaction } from '../model/pair_transaction'
-import { getRpcProviderByEnv, sleep } from '../util'
+import { sleep } from '../util'
 import { Core } from '../util/core'
 import { errorLogger } from '../util/logger'
-import { VoyagerService } from './voyager'
 import { RpcsService } from './rpcs'
+import { VoyagerService } from './voyager'
 
 const TRANSACTION_FEE_RATIO = 3
 
@@ -155,14 +155,7 @@ export class PairTransactionService {
     }
 
     // Rpc provider ⬇⬇⬇
-    const rpcsService = new RpcsService()
-    let rpcProvider = rpcsService.blastRpcProvider()
-    if (mod == 1) {
-      rpcProvider = rpcsService.lavaRpcProvider()
-    }
-    if (mod == 2) {
-      rpcProvider = rpcsService.nethermindRpcProvider()
-    }
+    const rpcProvider = RpcsService.createRandomRpcProvider()
 
     const transaction = await rpcProvider.getTransactionByHash(transaction_hash)
     const account_address = transaction
