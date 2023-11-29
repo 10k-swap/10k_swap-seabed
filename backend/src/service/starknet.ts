@@ -3,6 +3,7 @@ import { SnBlock } from '../model/sn_block'
 import { get10kStartBlockByEnv, getRpcProviderByEnv, sleep } from '../util'
 import { Core } from '../util/core'
 import { accessLogger } from '../util/logger'
+import { RpcsService } from './rpcs'
 
 export class StarknetService {
   public static latestBlockNumber = 0
@@ -72,8 +73,11 @@ export class StarknetService {
         }, 30000)
 
         try {
-          const rpcProvider = getRpcProviderByEnv()
+          const rpcProvider = RpcsService.createRandomRpcProvider()
           const r = await rpcProvider.getBlockWithTxHashes(blockNumber)
+          if (!r) {
+            throw new Error(`GetBlockWithTxHashes[${blockNumber}] failed.`)
+          }
 
           let events: RPC.SPEC.EMITTED_EVENT[] = []
           let continuationToken: string | undefined = undefined
@@ -132,7 +136,7 @@ export class StarknetService {
         }, 10000)
 
         try {
-          const result = await getRpcProviderByEnv().getEvents({
+          const result = await RpcsService.createRandomRpcProvider().getEvents({
             from_block: { block_number: blockNumber },
             to_block: { block_number: blockNumber },
             chunk_size: 1000,
@@ -147,7 +151,7 @@ export class StarknetService {
       })
     } catch (err) {
       tryCount += 1
-      if (tryCount > 10) throw err
+      if (tryCount > 3) throw err
 
       // Exponential Avoidance
       const ms = parseInt(tryCount * tryCount * 200 + '')

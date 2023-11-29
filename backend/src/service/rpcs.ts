@@ -25,4 +25,17 @@ export class RpcsService {
         : 'https://limited-rpc.nethermind.io/mainnet-juno',
     })
   }
+
+  static createRandomRpcProvider() {
+    const random = parseInt(Math.random() * 3 + '')
+    const rpcsService = new RpcsService()
+    switch (random) {
+      case 0:
+        return rpcsService.blastRpcProvider()
+      case 1:
+        return rpcsService.lavaRpcProvider()
+      default:
+        return rpcsService.nethermindRpcProvider()
+    }
+  }
 }

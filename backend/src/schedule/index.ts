@@ -13,7 +13,7 @@ import {
 
 export const startMasterJobs = async () => {
   // Only develop env
-  if (isDevelopEnv()) jobFaucetTwitter()
+  // if (isDevelopEnv()) jobFaucetTwitter()
 
   jobPoolCollect()
 
