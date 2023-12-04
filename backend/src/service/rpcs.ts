@@ -31,9 +31,9 @@ export class RpcsService {
     const rpcsService = new RpcsService()
     switch (random) {
       case 0:
-      // return rpcsService.alchemyRpcProvider()
+      // return rpcsService.nethermindRpcProvider()
       case 1:
-        return rpcsService.nethermindRpcProvider()
+        return rpcsService.lavaRpcProvider()
       default:
         return rpcsService.blastRpcProvider()
     }

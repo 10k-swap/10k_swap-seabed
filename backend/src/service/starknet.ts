@@ -40,21 +40,12 @@ export class StarknetService {
         )
 
         // Bulk update the database to prevent missing chunk data when the application is down.
-        await Promise.all(
-          blocks.map(async (block) => {
-            const one = await this.repoSnBlock.findOne(undefined, {
-              select: ['id'],
-              where: { block_number: block.block_number },
-            })
-
-            if (one === undefined) {
-              await this.repoSnBlock.insert({
-                block_number: block.block_number,
-                block_hash: block.block_hash,
-                block_data: block,
-              })
-            }
-          })
+        await this.repoSnBlock.save(
+          blocks.map((block) => ({
+            block_number: block.block_number,
+            block_hash: block.block_hash,
+            block_data: block,
+          }))
         )
 
         bnArray = []
