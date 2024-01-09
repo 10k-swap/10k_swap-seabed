@@ -7,6 +7,7 @@ import { PairTransactionService } from '../service/pair_transaction'
 import { PoolService } from '../service/pool'
 import { StarknetService } from '../service/starknet'
 import { errorLogger } from '../util/logger'
+import { PairTransferService } from '../service/pair_transfer'
 
 // import { doSms } from '../sms/smsSchinese'
 class MJob {
@@ -142,6 +143,18 @@ export function jobPairTransactionAccountAddress() {
     '*/5 * * * * *',
     callback,
     jobPairTransactionAccountAddress.name
+  ).schedule()
+}
+
+export function jobPairTransferPurify() {
+  const callback = async () => {
+    await new PairTransferService().purify()
+  }
+
+  new MJobPessimism(
+    '*/5 * * * * *',
+    callback,
+    jobPairTransferPurify.name
   ).schedule()
 }
 

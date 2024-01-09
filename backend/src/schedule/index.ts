@@ -1,12 +1,11 @@
-import { isDevelopEnv } from '../util'
 import {
   jobCacheTVLsByDayAndVolumesByDay,
   jobCoinbaseCache,
   jobCollectSNBlock,
-  jobFaucetTwitter,
   jobPairEventStartWork,
   jobPairTransactionAccountAddress,
   jobPairTransactionPurify,
+  jobPairTransferPurify,
   jobPoolCollect,
   jobUpdateLatestBlockNumber,
 } from './jobs'
@@ -25,6 +24,7 @@ export const startMasterJobs = async () => {
   jobPairEventStartWork()
   jobPairTransactionPurify()
   jobPairTransactionAccountAddress()
+  jobPairTransferPurify()
 
   jobCacheTVLsByDayAndVolumesByDay()
 }
