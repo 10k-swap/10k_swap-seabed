@@ -140,6 +140,38 @@ export class PairTransactionService {
       .process(updateAccountGroup.bind(this))
   }
 
+  async get_addresses_with_page(
+    pairAddress: string,
+    keyName: string,
+    page = 1
+  ) {
+    const limit = 100
+    page = Number.isNaN(page) || page < 1 ? 1 : page
+
+    // QueryBuilder
+    const queryBuilder = this.repoPairTransaction.createQueryBuilder()
+    queryBuilder.select('DISTINCT account_address as account_address')
+    queryBuilder.andWhere(`account_address != ''`)
+    if (pairAddress) {
+      queryBuilder.andWhere(`pair_address = :pairAddress`, { pairAddress })
+    }
+    if (keyName) {
+      if (keyName != 'Swap' && keyName != 'Mint' && keyName != 'Burn') {
+        throw new Error(`Invalid keyName: ${keyName}`)
+      }
+
+      queryBuilder.andWhere('key_name = :keyName', { keyName })
+    }
+    queryBuilder.addOrderBy('account_address', 'ASC')
+
+    queryBuilder.limit(limit).offset(limit * (page - 1))
+
+    const addresses = await queryBuilder.getRawMany()
+    const total = await queryBuilder.getCount()
+
+    return { addresses, total, limit, page }
+  }
+
   private totalGroupGetAccountAddress = 4
   private async getAccountAddress(index: number, transaction_hash: string) {
     const mod = index % this.totalGroupGetAccountAddress

@@ -4,6 +4,7 @@ import analytics from './analytics'
 import app from './app'
 import pool from './pool'
 import activity from './activity'
+import transaction from './transaction'
 
 export default function () {
   const router = new KoaRouter<DefaultState, Context>({ prefix: '/' })
@@ -15,6 +16,8 @@ export default function () {
   analytics(router)
 
   activity(router)
+
+  transaction(router)
 
   return router.routes()
 }
