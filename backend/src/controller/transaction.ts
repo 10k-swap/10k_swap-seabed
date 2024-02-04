@@ -10,15 +10,18 @@ export default function (router: KoaRouter<DefaultState, Context>) {
         pair_address: string
         key_name: string
         page: number
+        limit: number
       },
       request.query
     )
-    params.page = Number(params.page)
+    params.page = Number(params.page) || 0
+    params.limit = Number(params.limit) || 0
 
     const result = await new PairTransactionService().get_addresses_with_page(
       params.pair_address,
       params.key_name,
-      params.page
+      params.page,
+      params.limit
     )
 
     restful.json(result)

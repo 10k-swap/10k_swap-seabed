@@ -143,14 +143,15 @@ export class PairTransactionService {
   async get_addresses_with_page(
     pairAddress: string,
     keyName: string,
-    page = 1
+    page = 1,
+    limit = 10000
   ) {
-    const limit = 100
     page = Number.isNaN(page) || page < 1 ? 1 : page
+    limit = Number.isInteger(limit) && limit > 0 ? limit : 10000
 
     // QueryBuilder
     const queryBuilder = this.repoPairTransaction.createQueryBuilder()
-    queryBuilder.select('DISTINCT account_address as account_address')
+    queryBuilder.select('account_address, MIN(id) id')
     queryBuilder.andWhere(`account_address != ''`)
     if (pairAddress) {
       queryBuilder.andWhere(`pair_address = :pairAddress`, { pairAddress })
@@ -162,11 +163,18 @@ export class PairTransactionService {
 
       queryBuilder.andWhere('key_name = :keyName', { keyName })
     }
-    queryBuilder.addOrderBy('account_address', 'ASC')
+    queryBuilder.addGroupBy('account_address')
+    queryBuilder.addOrderBy('id', 'ASC')
 
     queryBuilder.limit(limit).offset(limit * (page - 1))
 
-    const addresses = await queryBuilder.getRawMany()
+    const addresses = (
+      await queryBuilder.getRawMany<{
+        id: number
+        account_address: string
+      }>()
+    ).map((item) => item.account_address)
+
     const total = await queryBuilder.getCount()
 
     return { addresses, total, limit, page }
