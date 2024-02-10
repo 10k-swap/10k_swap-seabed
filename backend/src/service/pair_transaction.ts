@@ -140,7 +140,7 @@ export class PairTransactionService {
       .process(updateAccountGroup.bind(this))
   }
 
-  async get_addresses_with_page(
+  async getAddressesWithPage(
     pairAddress: string,
     keyName: string,
     page = 1,

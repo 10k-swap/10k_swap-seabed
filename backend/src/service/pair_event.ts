@@ -1,9 +1,10 @@
-import { hash, num } from 'starknet'
+import { hash, num, uint256 } from 'starknet'
 import { PairEvent } from '../model/pair_event'
 import { SnBlock } from '../model/sn_block'
-import { Core } from '../util/core'
-import { Pair, PoolService } from './pool'
 import { get10kStartBlockByEnv } from '../util'
+import { Core } from '../util/core'
+import { accessLogger } from '../util/logger'
+import { Pair, PoolService } from './pool'
 
 const keyNames = {
   [hash.getSelectorFromName('Approval')]: 'Approval',
@@ -152,6 +153,103 @@ export class PairEventService {
     //     await sleep(1000)
     //   }
     // }
+  }
+
+  async getLpEvents(pairAddress: string, fromBlock = 0, toBlock = 0) {
+    const diff = toBlock - fromBlock
+    if (Number.isNaN(diff) || diff <= 0 || diff > 20000) {
+      throw new Error(
+        `Invalid block, fromBlock: ${fromBlock} - toBlock: ${toBlock}`
+      )
+    }
+
+    const queryBuilder = this.repoPairEvent.createQueryBuilder()
+    queryBuilder.select(
+      'id, event_id, pair_address, transaction_hash, key_name, event_data, event_time, block_number'
+    )
+    if (pairAddress) {
+      queryBuilder.andWhere(`pair_address = :pairAddress`, { pairAddress })
+    }
+    queryBuilder.andWhere(`key_name = 'Transfer'`)
+    queryBuilder.andWhere('block_number BETWEEN :fromBlock AND :toBlock', {
+      fromBlock,
+      toBlock,
+    })
+    queryBuilder.orderBy('id', 'ASC')
+
+    const events = await queryBuilder.getRawMany()
+
+    const lpEvents: {
+      id: number
+      event_id: string
+      pair_address: string
+      transaction_hash: string
+      key_name: string
+      event_data: string
+      event_time: string
+      block_number: number
+    }[] = []
+    for (const event of events) {
+      try {
+        const eventData = JSON.parse(event.event_data)
+        if (eventData.length !== 4) {
+          accessLogger.warn(`Event[${event.event_id}] event_data invalid`)
+          continue
+        }
+
+        const eventData0 = num.toBigInt(eventData[0])
+        const eventData1 = num.toBigInt(eventData[1])
+        const eventDataAmount = num.toHex(
+          uint256.uint256ToBN({
+            low: eventData[2],
+            high: eventData[3],
+          })
+        )
+
+        // Ignore pair -> zero (Burn)
+        if (
+          eventData0 === num.toBigInt(event.pair_address) &&
+          eventData1 == 0n
+        ) {
+          continue
+        }
+
+        if (num.toBigInt(eventData[0]) === 0n) {
+          // Mint
+          event['key_name'] = 'Mint'
+          event['event_data_parsed'] = {
+            account: eventData[1],
+            amount: eventDataAmount,
+          }
+        } else if (
+          num.toBigInt(eventData[1]) === num.toBigInt(event.pair_address)
+        ) {
+          // Burn
+          event['key_name'] = 'Burn'
+          event['event_data_parsed'] = {
+            account: eventData[0],
+            amount: eventDataAmount,
+          }
+        } else {
+          // Transfer
+          event['event_data_parsed'] = {
+            account: eventData[0],
+            recipient: eventData[1],
+            amount: eventDataAmount,
+          }
+        }
+
+        event['event_data'] = eventData
+
+        lpEvents.push(event)
+      } catch (err: any) {
+        accessLogger.warn(
+          `Event[${event.event_id}] parse failed: ${err.message}`
+        )
+      }
+    }
+
+    return lpEvents
   }
 
   private async getAfterCursor(pair: Pair) {

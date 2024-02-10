@@ -17,7 +17,7 @@ export default function (router: KoaRouter<DefaultState, Context>) {
     params.page = Number(params.page) || 0
     params.limit = Number(params.limit) || 0
 
-    const result = await new PairTransactionService().get_addresses_with_page(
+    const result = await new PairTransactionService().getAddressesWithPage(
       params.pair_address,
       params.key_name,
       params.page,
