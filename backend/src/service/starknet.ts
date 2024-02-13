@@ -133,15 +133,23 @@ export class StarknetService {
         const rpcProvider = RpcsService.createRandomRpcProvider()
 
         try {
+          const chunkSize = 1000
           const result = await rpcProvider.getEvents({
             from_block: { block_number: blockNumber },
             to_block: { block_number: blockNumber },
-            chunk_size: 1000,
+            chunk_size: chunkSize,
             continuation_token: continuationToken,
           })
           if (!result) {
             throw new Error(
               `GetStarknetBlockEvents[${blockNumber}] failed, rpc: ${rpcProvider.nodeUrl}`
+            )
+          }
+          // If the data obtained by rpc getEvents exceeds the set value, the abnormal value of the returned value
+          // Warning: This situation occurs when requests are frequent
+          if (result.events.length > chunkSize) {
+            throw new Error(
+              `GetStarknetBlockEvents[${blockNumber}] data invalid, rpc: ${rpcProvider.nodeUrl}`
             )
           }
 

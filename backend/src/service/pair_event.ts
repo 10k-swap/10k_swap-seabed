@@ -185,9 +185,10 @@ export class PairEventService {
       pair_address: string
       transaction_hash: string
       key_name: string
-      event_data: string
+      event_data: string[]
       event_time: string
       block_number: number
+      event_data_parsed: { account: string; recipient?: string; amount: string }
     }[] = []
     for (const event of events) {
       try {
