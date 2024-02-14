@@ -16,6 +16,7 @@ import {
 import { Core } from '../util/core'
 import { errorLogger } from '../util/logger'
 import { CoinbaseService } from './coinbase'
+import { RpcsService } from './rpcs'
 
 export type Pair = {
   token0: { address: string; name: string; symbol: string; decimals: number }
@@ -123,7 +124,7 @@ export class PoolService {
     }
 
     const eventKeyHash = hash.getSelectorFromName(this.eventKey)
-    const rpcProvider = getRpcProviderByEnv()
+    const rpcProvider = new RpcsService().lavaRpcProvider()
 
     const eventsCacheKey = 'pool_service-collect-events'
     const eventsCacheValue = await Core.redis.get(eventsCacheKey)

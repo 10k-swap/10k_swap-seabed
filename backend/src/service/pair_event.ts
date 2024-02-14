@@ -175,7 +175,8 @@ export class PairEventService {
       fromBlock,
       toBlock,
     })
-    queryBuilder.orderBy('id', 'ASC')
+    queryBuilder.addOrderBy('block_number', 'ASC')
+    queryBuilder.addOrderBy('event_id', 'ASC')
 
     const events = await queryBuilder.getRawMany()
 
