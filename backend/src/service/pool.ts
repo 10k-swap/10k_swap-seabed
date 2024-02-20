@@ -206,7 +206,9 @@ export class PoolService {
       const liquidity = liquidity0 + liquidity1
 
       // fee / tvl * 365 * 100
-      const APR = ((fees24h * 365 * 100) / liquidity).toFixed(2)
+      const APR = (
+        liquidity > 0 ? (fees24h * 365 * 100) / liquidity : 0
+      ).toFixed(2)
 
       _pairs.push({
         token0: { address: token0, ...token0Info },
