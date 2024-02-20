@@ -15,6 +15,7 @@ import {
 } from '../util'
 import { Core } from '../util/core'
 import { errorLogger } from '../util/logger'
+import { AnalyticsService } from './analytics'
 import { CoinbaseService } from './coinbase'
 import { RpcsService } from './rpcs'
 
@@ -28,6 +29,8 @@ export type Pair = {
   totalSupply: string // hex
   liquidity: number // reserve0 + reserve1 for usd
   APR: string
+  fee24h: string
+  strkPrice?: string // Starknet token price(USD)
   lastUpdatedTime?: string
 }
 
@@ -148,6 +151,9 @@ export class PoolService {
       await Core.redis.setex(eventsCacheKey, 3_600, JSON.stringify(events))
     }
 
+    const analyticsService = new AnalyticsService()
+    const pairSwapFees24Hour = await analyticsService.getPairSwapFees24Hour()
+
     const _pairs: Pair[] = []
     for (const item of events) {
       const { keys, data } = item
@@ -168,10 +174,23 @@ export class PoolService {
       PoolService.cacheErc20Infos[token0] = token0Info
       PoolService.cacheErc20Infos[token1] = token1Info
 
-      // Goerli mock APR
-      const APR = Math.sqrt(parseInt('0x' + pairAddress.slice(-2), 16)).toFixed(
-        0
+      // fees(24h)
+      let f24Amount0 = 0,
+        f24Amount1 = 0
+      pairSwapFees24Hour.forEach((item) => {
+        if (pairAddress == item.pair_address) {
+          if (item.swap_reverse == 0) f24Amount0 += item.sum_fee
+          if (item.swap_reverse == 1) f24Amount1 += item.sum_fee
+        }
+      })
+      const fees24h = await analyticsService.amount0AddAmount1ForUsd(
+        f24Amount0,
+        f24Amount1,
+        { token0: token0Info, token1: token1Info }
       )
+
+      // TODO: strkPrice from coinbase
+      const strkPrice = '0'
 
       const coinbaseService = new CoinbaseService()
       const liquidity0 = await coinbaseService.exchangeToUsd(
@@ -184,14 +203,20 @@ export class PoolService {
         token1Info.decimals,
         token1Info.symbol
       )
+      const liquidity = liquidity0 + liquidity1
+
+      // fee / tvl * 365 * 100
+      const APR = ((fees24h * 365 * 100) / liquidity).toFixed(2)
 
       _pairs.push({
         token0: { address: token0, ...token0Info },
         token1: { address: token1, ...token1Info },
         pairAddress: pairAddress,
         ...pairInfo,
-        liquidity: liquidity0 + liquidity1,
+        liquidity,
         APR,
+        fee24h: fees24h + '',
+        strkPrice,
         lastUpdatedTime: new Date().toISOString(),
       })
 

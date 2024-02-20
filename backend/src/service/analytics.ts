@@ -491,7 +491,7 @@ export class AnalyticsService {
     }>()
   }
 
-  private async getPairSwapFees24Hour() {
+  async getPairSwapFees24Hour() {
     const startTime = dayjs().subtract(24, 'hour').unix()
     return this.getPairSwapFees(startTime, 0)
   }
@@ -548,10 +548,13 @@ export class AnalyticsService {
     return 0
   }
 
-  private async amount0AddAmount1ForUsd(
+  async amount0AddAmount1ForUsd(
     amount0: BigNumberish | undefined,
     amount1: BigNumberish | undefined,
-    pair: Pair
+    pair: {
+      token0: { symbol: string; decimals: number }
+      token1: { symbol: string; decimals: number }
+    }
   ) {
     const coinbaseService = new CoinbaseService()
     let amount0Usd = 0,
