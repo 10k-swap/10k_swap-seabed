@@ -74,7 +74,7 @@ export default function (router: KoaRouter<DefaultState, Context>) {
           pair.token1.symbol
         )
 
-        if (usd1 >= 10) {
+        if (Math.round(usd1) >= 10) {
           isAchieved = true
           break
         }
@@ -126,7 +126,7 @@ export default function (router: KoaRouter<DefaultState, Context>) {
           pair.token1.symbol
         )
 
-        if (usd1 >= 10) {
+        if (Math.round(usd1) >= 10) {
           isAchieved = true
           break
         }
@@ -178,7 +178,7 @@ export default function (router: KoaRouter<DefaultState, Context>) {
           pair.token1.symbol
         )
 
-        if (usd1 >= 10) {
+        if (Math.round(usd1) >= 10) {
           isAchieved = true
           break
         }
@@ -219,7 +219,7 @@ export default function (router: KoaRouter<DefaultState, Context>) {
           pair.token1.symbol
         )
 
-        if (usd0 + usd1 >= 20) {
+        if (Math.round(usd0 + usd1) >= 20) {
           isAchieved = true
           break
         }
@@ -260,7 +260,7 @@ export default function (router: KoaRouter<DefaultState, Context>) {
           pair.token1.symbol
         )
 
-        if (usd0 + usd1 >= 20) {
+        if (Math.round(usd0 + usd1) >= 20) {
           isAchieved = true
           break
         }
@@ -301,7 +301,7 @@ export default function (router: KoaRouter<DefaultState, Context>) {
           pair.token1.symbol
         )
 
-        if (usd0 + usd1 >= 20) {
+        if (Math.round(usd0 + usd1) >= 20) {
           isAchieved = true
           break
         }
@@ -342,7 +342,7 @@ export default function (router: KoaRouter<DefaultState, Context>) {
           pair.token1.symbol
         )
 
-        if (usd0 + usd1 >= 20) {
+        if (Math.round(usd0 + usd1) >= 20) {
           isAchieved = true
           break
         }
