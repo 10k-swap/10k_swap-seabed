@@ -191,8 +191,7 @@ export class PoolService {
       )
 
       // strkPrice from okx
-      const strkPrice =
-        (await new OKXService().exchangeToUsd(parseEther('1'), 18, 'STRK')) + ''
+      const strkPrice = (await new OKXService().getSTRKPrice()) + ''
 
       const okxService = new OKXService()
       const liquidity0 = await okxService.exchangeToUsd(

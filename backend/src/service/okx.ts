@@ -1,7 +1,7 @@
 import axios from 'axios'
 import axiosRetry from 'axios-retry'
 import { BigNumberish, FixedNumber } from 'ethers'
-import { formatUnits } from 'ethers/lib/utils'
+import { formatUnits, parseEther } from 'ethers/lib/utils'
 
 let usdtTickers: Array<{ instId: string; last: string }> = []
 
@@ -48,6 +48,10 @@ export class OKXService {
     const fnRate = FixedNumber.from(rate)
 
     return fnAmount.mulUnsafe(fnRate).toUnsafeFloat()
+  }
+
+  async getSTRKPrice() {
+    return await this.exchangeToUsd(parseEther('1'), 18, 'STRK')
   }
 
   private fillTKA_TKB() {
