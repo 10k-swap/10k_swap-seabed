@@ -2,8 +2,8 @@ import { appConfig } from '../config'
 import { accessLogger } from '../util/logger'
 import {
   jobCacheTVLsByDayAndVolumesByDay,
-  jobCoinbaseCache,
   jobCollectSNBlock,
+  jobOKXCache,
   jobPairEventStartWork,
   jobPairTransactionAccountAddress,
   jobPairTransactionPurify,
@@ -25,7 +25,7 @@ export const startMasterJobs = async () => {
 
   jobPoolCollect()
 
-  jobCoinbaseCache()
+  jobOKXCache()
 
   jobUpdateLatestBlockNumber()
   jobCollectSNBlock()

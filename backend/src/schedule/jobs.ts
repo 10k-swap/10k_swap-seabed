@@ -1,13 +1,13 @@
 import schedule from 'node-schedule'
 import { AnalyticsServiceCache } from '../service/analytics_cache'
-import { CoinbaseService } from '../service/coinbase'
 import { FaucetService } from '../service/faucet'
+import { OKXService } from '../service/okx'
 import { PairEventService } from '../service/pair_event'
 import { PairTransactionService } from '../service/pair_transaction'
+import { PairTransferService } from '../service/pair_transfer'
 import { PoolService } from '../service/pool'
 import { StarknetService } from '../service/starknet'
 import { errorLogger } from '../util/logger'
-import { PairTransferService } from '../service/pair_transfer'
 
 // import { doSms } from '../sms/smsSchinese'
 class MJob {
@@ -100,14 +100,12 @@ export function jobFaucetTwitter() {
   ).schedule()
 }
 
-export function jobCoinbaseCache() {
+export function jobOKXCache() {
   const callback = async () => {
-    await new CoinbaseService().cache()
+    await new OKXService().cache()
   }
 
-  new MJobPessimism('*/5 * * * * *', callback, jobCoinbaseCache.name).schedule(
-    true
-  )
+  new MJobPessimism('*/5 * * * * *', callback, jobOKXCache.name).schedule(true)
 }
 
 export function jobPairEventStartWork() {

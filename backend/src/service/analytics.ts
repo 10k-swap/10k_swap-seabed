@@ -5,7 +5,7 @@ import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm'
 import { PairTransaction } from '../model/pair_transaction'
 import { dateFormatNormal } from '../util'
 import { Core } from '../util/core'
-import { CoinbaseService } from './coinbase'
+import { OKXService } from './okx'
 import type { Pair } from './pool'
 import { PoolService } from './pool'
 
@@ -218,12 +218,12 @@ export class AnalyticsService {
         )
 
         if (BigInt(item.fee) > 0n) {
-          const coinbaseService = new CoinbaseService()
+          const okxService = new OKXService()
           const [_decimals, _symbol] =
             item.swap_reverse === 0
               ? [pair.token0.decimals, pair.token0.symbol]
               : [pair.token1.decimals, pair.token1.symbol]
-          item['fee_usd'] = await coinbaseService.exchangeToUsd(
+          item['fee_usd'] = await okxService.exchangeToUsd(
             item.fee,
             _decimals,
             _symbol
@@ -556,18 +556,18 @@ export class AnalyticsService {
       token1: { symbol: string; decimals: number }
     }
   ) {
-    const coinbaseService = new CoinbaseService()
+    const okxService = new OKXService()
     let amount0Usd = 0,
       amount1Usd = 0
     if (amount0) {
-      amount0Usd = await coinbaseService.exchangeToUsd(
+      amount0Usd = await okxService.exchangeToUsd(
         amount0 + '',
         pair.token0.decimals,
         pair.token0.symbol
       )
     }
     if (amount1) {
-      amount1Usd = await coinbaseService.exchangeToUsd(
+      amount1Usd = await okxService.exchangeToUsd(
         amount1 + '',
         pair.token1.decimals,
         pair.token1.symbol

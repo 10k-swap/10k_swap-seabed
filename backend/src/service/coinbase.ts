@@ -3,6 +3,9 @@ import axiosRetry from 'axios-retry'
 import { BigNumberish, FixedNumber } from 'ethers'
 import { formatUnits } from 'ethers/lib/utils'
 
+/**
+ * @Deprecated. Replaced by OKXService
+ */
 export class CoinbaseService {
   public static usdRates: { [key: string]: string } | undefined = undefined
 
