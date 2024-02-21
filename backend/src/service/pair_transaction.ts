@@ -180,6 +180,45 @@ export class PairTransactionService {
     return { addresses, total, limit, page }
   }
 
+  async getListByAccount(
+    accountAddress: string,
+    pairAddress?: string,
+    keyName?: string
+  ) {
+    // QueryBuilder
+    const queryBuilder = this.repoPairTransaction.createQueryBuilder()
+    queryBuilder.select(
+      'id, pair_address, key_name, account_address, event_time, amount0, amount1, swap_reverse'
+    )
+    if (pairAddress) {
+      queryBuilder.andWhere('pair_address = :pairAddress', { pairAddress })
+    }
+    if (keyName) {
+      if (keyName != 'Swap' && keyName != 'Mint' && keyName != 'Burn') {
+        throw new Error(`Invalid keyName: ${keyName}`)
+      }
+
+      queryBuilder.andWhere('key_name = :keyName', { keyName })
+    }
+    queryBuilder.andWhere('account_address = :accountAddress', {
+      accountAddress,
+    })
+    queryBuilder.addOrderBy('event_time', 'ASC')
+
+    const list = await queryBuilder.getRawMany<{
+      id: number
+      pair_address: string
+      key_name: string
+      account_address: string
+      event_time: Date
+      amount0: string
+      amount1: string
+      swap_reverse: number
+    }>()
+
+    return list
+  }
+
   private totalGroupGetAccountAddress = 4
   private async getAccountAddress(index: number, transaction_hash: string) {
     const mod = index % this.totalGroupGetAccountAddress

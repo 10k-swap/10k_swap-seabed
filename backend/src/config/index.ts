@@ -19,6 +19,11 @@ const appConfig = {
     port: process.env.APP_OPTIONS_PORT || 3000,
     host: process.env.APP_OPTIONS_HOST || '127.0.0.1',
   },
+
+  stopJobs:
+    process.env.APP_STOP_JOBS === undefined
+      ? false
+      : process.env.APP_STOP_JOBS.trim() == 'true',
 }
 
 export {

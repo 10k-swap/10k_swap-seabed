@@ -1,8 +1,9 @@
+import { plainToInstance } from 'class-transformer'
+import dayjs from 'dayjs'
 import { Context, DefaultState } from 'koa'
 import KoaRouter from 'koa-router'
 import { ActivityService } from '../service/activity'
-import { plainToInstance } from 'class-transformer'
-import dayjs from 'dayjs'
+import activityStarknetDefispring from './activity-starknet_defispring'
 
 export default function (router: KoaRouter<DefaultState, Context>) {
   const activityService = new ActivityService()
@@ -23,4 +24,6 @@ export default function (router: KoaRouter<DefaultState, Context>) {
 
     restful.json({ interacted })
   })
+
+  activityStarknetDefispring(router)
 }
