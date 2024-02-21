@@ -27,7 +27,7 @@ export class OKXService {
     decimals: number,
     currency: string
   ) {
-    if (!usdtTickers) {
+    if (usdtTickers.length === 0) {
       await this.cache()
     }
 

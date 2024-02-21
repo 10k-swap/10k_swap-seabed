@@ -188,7 +188,7 @@ export class PairTransactionService {
     // QueryBuilder
     const queryBuilder = this.repoPairTransaction.createQueryBuilder()
     queryBuilder.select(
-      'id, pair_address, key_name, account_address, event_time, amount0, amount1, swap_reverse'
+      'id, pair_address, transaction_hash, key_name, account_address, event_time, amount0, amount1, swap_reverse'
     )
     if (pairAddress) {
       queryBuilder.andWhere('pair_address = :pairAddress', { pairAddress })
@@ -208,6 +208,7 @@ export class PairTransactionService {
     const list = await queryBuilder.getRawMany<{
       id: number
       pair_address: string
+      transaction_hash: string
       key_name: string
       account_address: string
       event_time: Date

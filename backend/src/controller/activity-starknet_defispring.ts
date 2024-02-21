@@ -5,6 +5,8 @@ import { addAddressPadding } from 'starknet'
 import { ServiceErrorCodes } from '../error/service'
 import { ActivityService } from '../service/activity'
 import { PairTransactionService } from '../service/pair_transaction'
+import { PoolService } from '../service/pool'
+import { OKXService } from '../service/okx'
 
 async function intractIOCall(
   ctx: Context,
@@ -43,101 +45,310 @@ async function intractIOCall(
 
 export default function (router: KoaRouter<DefaultState, Context>) {
   const pairTransactionService = new PairTransactionService()
+  const okxService = new OKXService()
 
   // Swap from ETH to STRK ( min 10$ liquidity in 1 txn)
   router.post('activity/starknet_defispring/query1', async (ctx) => {
     await intractIOCall(ctx, async (address) => {
+      const pair = PoolService.pairs.find(
+        (item) =>
+          item.pairAddress ==
+          '0x4ad445ffb6294d1394b3f6a5610642d37c702eaaa47346b680c6af2f102192e'
+      )
+      if (!pair) return false
+
       const list = await pairTransactionService.getListByAccount(
         address,
-        undefined,
+        pair.pairAddress,
         'Swap'
       )
 
-      // TODO: calculate price
+      let isAchieved = false
+      for (const item of list) {
+        // Only ETH to STRK
+        if (item.swap_reverse != 1) continue
 
-      return false
+        const usd1 = await okxService.exchangeToUsd(
+          item.amount1,
+          pair.token1.decimals,
+          pair.token1.symbol
+        )
+
+        if (usd1 >= 10) {
+          isAchieved = true
+          break
+        }
+      }
+
+      return isAchieved
     })
   })
 
   // Swap from USDC/ USDT to STRK ( min 10$ liquidity in 1 txn)
   router.post('activity/starknet_defispring/query2', async (ctx) => {
     await intractIOCall(ctx, async (address) => {
+      const pairSTRK_USDC = PoolService.pairs.find(
+        (item) =>
+          item.pairAddress ==
+          '0x66733193503019e4e9472f598ff32f15951a0ddb8fb5001f0beaa8bd1fb6840'
+      )
+      if (!pairSTRK_USDC) return false
+
+      const pairSTRK_USDT = PoolService.pairs.find(
+        (item) =>
+          item.pairAddress ==
+          '0x784a8ec64af2b45694b94875fe6adbb57fadf9e196aa1aa1d144d163d0d8c51'
+      )
+      if (!pairSTRK_USDT) return false
+
       const list = await pairTransactionService.getListByAccount(
         address,
         undefined,
         'Swap'
       )
 
-      // TODO: calculate price
+      let isAchieved = false
+      for (const item of list) {
+        // Only USDC/USDT to STRK
+        if (item.swap_reverse != 1) continue
 
-      return false
+        const pair =
+          item.pair_address == pairSTRK_USDC.pairAddress
+            ? pairSTRK_USDC
+            : item.pair_address == pairSTRK_USDT.pairAddress
+            ? pairSTRK_USDT
+            : undefined
+        if (!pair) continue
+
+        const usd1 = await okxService.exchangeToUsd(
+          item.amount1,
+          pair.token1.decimals,
+          pair.token1.symbol
+        )
+
+        if (usd1 >= 10) {
+          isAchieved = true
+          break
+        }
+      }
+
+      return isAchieved
     })
   })
 
   // Swap from USDC/ USDT to ETH ( min 10$ liquidity in 1 txn)
   router.post('activity/starknet_defispring/query3', async (ctx) => {
     await intractIOCall(ctx, async (address) => {
+      const pairETH_USDC = PoolService.pairs.find(
+        (item) =>
+          item.pairAddress ==
+          '0x23c72abdf49dffc85ae3ede714f2168ad384cc67d08524732acea90df325'
+      )
+      if (!pairETH_USDC) return false
+
+      const pairETH_USDT = PoolService.pairs.find(
+        (item) =>
+          item.pairAddress ==
+          '0x5900cfa2b50d53b097cb305d54e249e31f24f881885aae5639b0cd6af4ed298'
+      )
+      if (!pairETH_USDT) return false
+
       const list = await pairTransactionService.getListByAccount(
         address,
         undefined,
         'Swap'
       )
 
-      // TODO: calculate price
+      let isAchieved = false
+      for (const item of list) {
+        // Only USDC/USDT to ETH
+        if (item.swap_reverse != 1) continue
 
-      return false
+        const pair =
+          item.pair_address == pairETH_USDC.pairAddress
+            ? pairETH_USDC
+            : item.pair_address == pairETH_USDT.pairAddress
+            ? pairETH_USDT
+            : undefined
+        if (!pair) continue
+
+        const usd1 = await okxService.exchangeToUsd(
+          item.amount1,
+          pair.token1.decimals,
+          pair.token1.symbol
+        )
+
+        if (usd1 >= 10) {
+          isAchieved = true
+          break
+        }
+      }
+
+      return isAchieved
     })
   })
 
   // Add liquidity to STRK-ETH ( min 20 $ in 1 txn )
   router.post('activity/starknet_defispring/query4', async (ctx) => {
     await intractIOCall(ctx, async (address) => {
+      const pairAddress =
+        '0x4ad445ffb6294d1394b3f6a5610642d37c702eaaa47346b680c6af2f102192e'
+
+      const pair = PoolService.pairs.find(
+        (item) => item.pairAddress == pairAddress
+      )
+      if (!pair) return false
+
       const list = await pairTransactionService.getListByAccount(
         address,
-        undefined,
+        pairAddress,
         'Mint'
       )
 
-      return false
+      let isAchieved = false
+      for (const item of list) {
+        const usd0 = await okxService.exchangeToUsd(
+          item.amount0,
+          pair.token0.decimals,
+          pair.token0.symbol
+        )
+
+        const usd1 = await okxService.exchangeToUsd(
+          item.amount1,
+          pair.token1.decimals,
+          pair.token1.symbol
+        )
+
+        if (usd0 + usd1 >= 20) {
+          isAchieved = true
+          break
+        }
+      }
+
+      return isAchieved
     })
   })
 
   // Add liquidity to STRK-USDC ( min 20 $ in 1 txn )
   router.post('activity/starknet_defispring/query5', async (ctx) => {
     await intractIOCall(ctx, async (address) => {
+      const pairAddress =
+        '0x66733193503019e4e9472f598ff32f15951a0ddb8fb5001f0beaa8bd1fb6840'
+
+      const pair = PoolService.pairs.find(
+        (item) => item.pairAddress == pairAddress
+      )
+      if (!pair) return false
+
       const list = await pairTransactionService.getListByAccount(
         address,
-        undefined,
+        pairAddress,
         'Mint'
       )
 
-      return false
+      let isAchieved = false
+      for (const item of list) {
+        const usd0 = await okxService.exchangeToUsd(
+          item.amount0,
+          pair.token0.decimals,
+          pair.token0.symbol
+        )
+
+        const usd1 = await okxService.exchangeToUsd(
+          item.amount1,
+          pair.token1.decimals,
+          pair.token1.symbol
+        )
+
+        if (usd0 + usd1 >= 20) {
+          isAchieved = true
+          break
+        }
+      }
+
+      return isAchieved
     })
   })
 
   // Add liquidity to ETH-USDC ( min 20 $ in 1 txn )
   router.post('activity/starknet_defispring/query6', async (ctx) => {
     await intractIOCall(ctx, async (address) => {
+      const pairAddress =
+        '0x23c72abdf49dffc85ae3ede714f2168ad384cc67d08524732acea90df325'
+
+      const pair = PoolService.pairs.find(
+        (item) => item.pairAddress == pairAddress
+      )
+      if (!pair) return false
+
       const list = await pairTransactionService.getListByAccount(
         address,
-        undefined,
+        pairAddress,
         'Mint'
       )
 
-      return false
+      let isAchieved = false
+      for (const item of list) {
+        const usd0 = await okxService.exchangeToUsd(
+          item.amount0,
+          pair.token0.decimals,
+          pair.token0.symbol
+        )
+
+        const usd1 = await okxService.exchangeToUsd(
+          item.amount1,
+          pair.token1.decimals,
+          pair.token1.symbol
+        )
+
+        if (usd0 + usd1 >= 20) {
+          isAchieved = true
+          break
+        }
+      }
+
+      return isAchieved
     })
   })
 
   // Add liquidity to USDC -USDT ( min 20 $ in 1 txn )
   router.post('activity/starknet_defispring/query7', async (ctx) => {
     await intractIOCall(ctx, async (address) => {
+      const pairAddress =
+        '0x41a708cf109737a50baa6cbeb9adf0bf8d97112dc6cc80c7a458cbad35328b0'
+
+      const pair = PoolService.pairs.find(
+        (item) => item.pairAddress == pairAddress
+      )
+      if (!pair) return false
+
       const list = await pairTransactionService.getListByAccount(
         address,
-        undefined,
+        pairAddress,
         'Mint'
       )
 
-      return false
+      let isAchieved = false
+      for (const item of list) {
+        const usd0 = await okxService.exchangeToUsd(
+          item.amount0,
+          pair.token0.decimals,
+          pair.token0.symbol
+        )
+
+        const usd1 = await okxService.exchangeToUsd(
+          item.amount1,
+          pair.token1.decimals,
+          pair.token1.symbol
+        )
+
+        if (usd0 + usd1 >= 20) {
+          isAchieved = true
+          break
+        }
+      }
+
+      return isAchieved
     })
   })
 
