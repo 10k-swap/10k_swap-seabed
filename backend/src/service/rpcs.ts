@@ -26,6 +26,7 @@ export class RpcsService {
     })
   }
 
+  // Warning bug: getEvents only response 10 event
   alchemyRpcProvider() {
     return new RpcProvider({
       nodeUrl: isDevelopEnv()
@@ -39,7 +40,7 @@ export class RpcsService {
     const rpcsService = new RpcsService()
     switch (random) {
       case 0:
-        return rpcsService.nethermindRpcProvider()
+      // return rpcsService.nethermindRpcProvider()
       case 1:
         return rpcsService.alchemyRpcProvider()
       // return rpcsService.lavaRpcProvider()

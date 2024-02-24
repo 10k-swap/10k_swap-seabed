@@ -16,7 +16,7 @@ nginx*/
 local.*
 .env
 .data/
-.vscode
+# .vscode
 redis/
 
 # nginx ssl
