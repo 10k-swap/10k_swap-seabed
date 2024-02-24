@@ -128,7 +128,7 @@ export class PoolService {
     }
 
     const eventKeyHash = hash.getSelectorFromName(this.eventKey)
-    const rpcProvider = RpcsService.createRandomRpcProvider()
+    const rpcProvider = new RpcsService().alchemyRpcProvider()
 
     const eventsCacheKey = 'pool_service-collect-events'
     const eventsCacheValue = await Core.redis.get(eventsCacheKey)
