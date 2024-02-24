@@ -2,7 +2,7 @@ import { RpcProvider } from 'starknet'
 import { isDevelopEnv } from '../util'
 
 export class RpcsService {
-  blastRpcProvider() {
+  defaultRpcProvider() {
     return new RpcProvider({
       nodeUrl: isDevelopEnv()
         ? 'https://starknet-testnet.public.blastapi.io'
@@ -21,8 +21,16 @@ export class RpcsService {
   nethermindRpcProvider() {
     return new RpcProvider({
       nodeUrl: isDevelopEnv()
-        ? 'https://limited-rpc.nethermind.io/goerli-juno'
-        : 'https://limited-rpc.nethermind.io/mainnet-juno',
+        ? 'https://free-rpc.nethermind.io/goerli-juno'
+        : 'https://free-rpc.nethermind.io/mainnet-juno',
+    })
+  }
+
+  alchemyRpcProvider() {
+    return new RpcProvider({
+      nodeUrl: isDevelopEnv()
+        ? 'https://starknet-goerli.g.alchemy.com/v2/qtdLys1T51z8inozPo7lSOfQ9mQueQRj'
+        : 'https://starknet-mainnet.g.alchemy.com/v2/TgQ5rUXPT1XZUHaSCAzST3j17C2eu27x',
     })
   }
 
@@ -31,11 +39,12 @@ export class RpcsService {
     const rpcsService = new RpcsService()
     switch (random) {
       case 0:
-      // return rpcsService.nethermindRpcProvider()
+        return rpcsService.nethermindRpcProvider()
       case 1:
-        return rpcsService.lavaRpcProvider()
+        return rpcsService.alchemyRpcProvider()
+      // return rpcsService.lavaRpcProvider()
       default:
-        return rpcsService.blastRpcProvider()
+        return rpcsService.defaultRpcProvider()
     }
   }
 }

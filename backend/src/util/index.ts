@@ -122,7 +122,7 @@ export function getProviderByEnv() {
 }
 
 export function getRpcProviderByEnv() {
-  return new RpcsService().blastRpcProvider()
+  return new RpcsService().defaultRpcProvider()
 }
 
 export function isRpcTooManyRequests(err: Error) {
