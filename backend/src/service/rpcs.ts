@@ -18,6 +18,7 @@ export class RpcsService {
     })
   }
 
+  // Warning bug: getEvents only response 10 event
   nethermindRpcProvider() {
     return new RpcProvider({
       nodeUrl: isDevelopEnv()
@@ -26,7 +27,6 @@ export class RpcsService {
     })
   }
 
-  // Warning bug: getEvents only response 10 event
   alchemyRpcProvider() {
     return new RpcProvider({
       nodeUrl: isDevelopEnv()
