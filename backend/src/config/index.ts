@@ -13,6 +13,7 @@ import * as redisConfig from './redis'
 import networkConfig from './network'
 import * as contractConfig from './contract'
 import faucetConfig from './faucet'
+import purifyConfig from './purify'
 
 const appConfig = {
   options: <ListenOptions>{
@@ -34,4 +35,5 @@ export {
   networkConfig,
   contractConfig,
   faucetConfig,
+  purifyConfig,
 }

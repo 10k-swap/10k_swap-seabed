@@ -1,10 +1,12 @@
-import { hash, num, uint256 } from 'starknet'
+import { GetBlockResponse, hash, num, uint256 } from 'starknet'
+import { Between } from 'typeorm'
 import { PairEvent } from '../model/pair_event'
 import { SnBlock } from '../model/sn_block'
 import { get10kStartBlockByEnv } from '../util'
 import { Core } from '../util/core'
 import { accessLogger } from '../util/logger'
-import { Pair, PoolService } from './pool'
+import { PoolService } from './pool'
+import { StarknetService } from './starknet'
 
 const keyNames = {
   [hash.getSelectorFromName('Approval')]: 'Approval',
@@ -16,7 +18,17 @@ const keyNames = {
 }
 
 export class PairEventService {
-  private static pairCursors: { [key: string]: string } = {}
+  public static completionStatus: {
+    fromBlock: number
+    toBlock?: number
+    currentBlock: number
+    status: 'Received' | 'Pending' | 'Done'
+  } = {
+    fromBlock: 0,
+    toBlock: undefined,
+    currentBlock: 0,
+    status: 'Done',
+  }
 
   constructor(
     private repoPairEvent = Core.db.getRepository(PairEvent),
@@ -26,47 +38,6 @@ export class PairEventService {
   async startWork() {
     if (PoolService.pairs.length < 1) {
       return
-    }
-
-    const saveWhenNoExist = async (data: any) => {
-      const { transaction_index, transaction_hash, event_index } = data
-
-      if (!transaction_hash) {
-        return
-      }
-
-      const event_id = `${transaction_hash}_${event_index}`
-
-      const one = await this.repoPairEvent.findOne({
-        where: { event_id },
-      })
-      if (one) {
-        return
-      }
-
-      const cursor = Buffer.from(
-        `${transaction_hash}_${event_index}__${data.timestamp}${
-          transaction_index + ''.padStart(6, '0')
-        }${event_index + ''.padStart(6, '0')}`
-      ).toString('base64')
-
-      const pairEvent = new PairEvent()
-      pairEvent.event_id = event_id
-      pairEvent.pair_address = data.pairAddress
-      pairEvent.transaction_hash = transaction_hash
-      pairEvent.event_data = JSON.stringify(data.event_data)
-      pairEvent.key_name = data.name
-      pairEvent.block_number = data.block_number
-      pairEvent.event_time = new Date(data.timestamp * 1000)
-      pairEvent.cursor = cursor
-      pairEvent.source_data = JSON.stringify(data)
-      pairEvent.status = 0
-
-      if (['Swap', 'Mint', 'Burn'].indexOf(pairEvent.key_name) === -1) {
-        pairEvent.status = 99
-      }
-
-      return this.repoPairEvent.save(pairEvent)
     }
 
     const lastPairEvent = await this.repoPairEvent.findOne(undefined, {
@@ -86,73 +57,97 @@ export class PairEventService {
       })
       if (snBlock?.block_data === undefined) continue
 
-      const transaction_receipts: {
-        transaction_index: number
-        transaction_hash: string
-        events: { from_address: string; keys: string[]; data: any[] }[]
-      }[] = snBlock.block_data['transaction_receipts']
-      if (!(transaction_receipts instanceof Array)) {
-        continue
-      }
+      await this.saveEventsFromBlockData(snBlock.block_data)
+    }
+  }
 
-      const datas: any[] = []
-      for (const item of transaction_receipts) {
-        if (!(item.events instanceof Array)) continue
-
-        for (const eventIndex in item.events) {
-          const event = item.events[eventIndex]
-
-          const targetPair = PoolService.pairs.find(
-            (p) =>
-              num.toBigInt(event.from_address) == num.toBigInt(p.pairAddress)
-          )
-
-          if (targetPair === undefined) continue
-
-          const key = event.keys.find((k) => keyNames[k] !== undefined)
-          if (key === undefined) continue
-
-          datas.push({
-            pairAddress: targetPair.pairAddress,
-            event_index: eventIndex,
-            transaction_index: item.transaction_index,
-            transaction_hash: item.transaction_hash,
-            name: keyNames[key],
-            block_number: snBlock.block_data.block_number,
-            event_data: event.data,
-            timestamp: snBlock.block_data['timestamp'],
-          })
-        }
-      }
-
-      await Promise.all(datas.map((data: any) => saveWhenNoExist(data)))
+  async completion(fromBlock: number, toBlock?: number) {
+    if (PairEventService.completionStatus.status !== 'Done') {
+      accessLogger.warn(
+        `Completion pair event doing: fromBlock: ${PairEventService.completionStatus.fromBlock}, toBlock: ${PairEventService.completionStatus.toBlock}, currentBlock: ${PairEventService.completionStatus.currentBlock}`
+      )
+      return
     }
 
-    // let p = 1
-    // while (true) {
-    //   try {
-    //     const { data } = await voyagerService
-    //       .getAxiosClient()
-    //       .get(`/api/events?contract=${pair.pairAddress}&ps=50&p=${p}`, {
-    //         headers,
-    //       })
+    PairEventService.completionStatus = {
+      fromBlock,
+      toBlock,
+      currentBlock: fromBlock,
+      status: 'Pending',
+    }
 
-    //     const items: any[] | undefined = data?.items
-    //     if (items == undefined) {
-    //       throw 'undefined items!'
-    //     }
-    //     if (items.length <= 0) {
-    //       break
-    //     }
+    const done = () => {
+      accessLogger.info(
+        `Completion pair event done, fromBlock: ${fromBlock} - toBlock: ${toBlock}`
+      )
+      PairEventService.completionStatus.status = 'Done'
+    }
 
-    //     await Promise.all(items.map((item: any) => saveWhenNoExist(item)))
+    while (true) {
+      if (
+        toBlock !== undefined &&
+        PairEventService.completionStatus.currentBlock >= toBlock
+      ) {
+        done()
+        break
+      }
 
-    //     p += 1
-    //   } catch (e) {
-    //     errorLogger.error(`PairEvent collect failed: ${e.message}`)
-    //     await sleep(1000)
-    //   }
-    // }
+      const snBlocks = await this.repoSnBlock.find({
+        take: 2000,
+        order: { block_number: 'ASC' },
+        where: {
+          block_number: Between(
+            PairEventService.completionStatus.currentBlock,
+            PairEventService.completionStatus.toBlock || Number.MAX_SAFE_INTEGER
+          ),
+        },
+      })
+
+      if (snBlocks.length == 0) {
+        done()
+        break
+      }
+
+      for (const snBlock of snBlocks) {
+        PairEventService.completionStatus.currentBlock = snBlock.block_number
+        let blockInfo = snBlock.block_data
+
+        let events: any[] = []
+        for (const receipt of snBlock.block_data.transaction_receipts) {
+          events = events.concat(receipt.events)
+        }
+
+        // Event length 1001 is generally invalid data. A bug of blast rpc
+        if (events.length == 1001) {
+          blockInfo = await new StarknetService().getStarknetBlockInfo(
+            snBlock.block_number
+          )
+
+          let events2: any[] = []
+          for (const receipt of blockInfo.transaction_receipts) {
+            events2 = events2.concat(receipt.events)
+          }
+
+          accessLogger.info(
+            'events.length:',
+            events.length,
+            ', block:',
+            snBlock.block_number,
+            ', new events.length:',
+            events2.length
+          )
+
+          await this.repoSnBlock.update(snBlock.id, {
+            block_data: blockInfo,
+          })
+          accessLogger.info(
+            `repoSnBlock.update[${snBlock.id}], block number: ${snBlock.block_number}`
+          )
+        }
+
+        await this.saveEventsFromBlockData(blockInfo)
+      }
+    }
   }
 
   async getLpEvents(pairAddress: string, fromBlock = 0, toBlock = 0) {
@@ -254,16 +249,86 @@ export class PairEventService {
     return lpEvents
   }
 
-  private async getAfterCursor(pair: Pair) {
-    if (PairEventService.pairCursors[pair.pairAddress]) {
-      return PairEventService.pairCursors[pair.pairAddress]
+  private async saveEventsFromBlockData(blockData: GetBlockResponse) {
+    const transaction_receipts: {
+      transaction_index: number
+      transaction_hash: string
+      events: { from_address: string; keys: string[]; data: any[] }[]
+    }[] = blockData['transaction_receipts']
+    if (!(transaction_receipts instanceof Array)) {
+      return
     }
 
-    const pairEvent = await this.repoPairEvent.findOne({
-      select: ['cursor'],
-      where: { pair_address: pair.pairAddress },
-      order: { event_time: 'DESC' },
+    const datas: any[] = []
+    for (const item of transaction_receipts) {
+      if (!(item.events instanceof Array)) continue
+
+      for (const eventIndex in item.events) {
+        const event = item.events[eventIndex]
+
+        // Todo: If a new pair is added and PoolService.pairs is not updated in time, data will be lost.
+        const targetPair = PoolService.pairs.find(
+          (p) => num.toBigInt(event.from_address) == num.toBigInt(p.pairAddress)
+        )
+        if (targetPair === undefined) continue
+
+        const key = event.keys.find((k) => keyNames[k] !== undefined)
+        if (key === undefined) continue
+
+        datas.push({
+          pairAddress: targetPair.pairAddress,
+          event_index: eventIndex,
+          transaction_index: item.transaction_index,
+          transaction_hash: item.transaction_hash,
+          name: keyNames[key],
+          block_number: blockData.block_number,
+          event_data: event.data,
+          timestamp: blockData.timestamp,
+        })
+      }
+    }
+
+    await Promise.all(datas.map((data: any) => this.saveWhenNoExist(data)))
+  }
+
+  private async saveWhenNoExist(data: any) {
+    const { transaction_index, transaction_hash, event_index } = data
+
+    if (!transaction_hash) {
+      return
+    }
+
+    const event_id = `${transaction_hash}_${event_index}`
+
+    const one = await this.repoPairEvent.findOne({
+      where: { event_id },
     })
-    return pairEvent?.cursor || ''
+    if (one) {
+      return
+    }
+
+    const cursor = Buffer.from(
+      `${transaction_hash}_${event_index}__${data.timestamp}${
+        transaction_index + ''.padStart(6, '0')
+      }${event_index + ''.padStart(6, '0')}`
+    ).toString('base64')
+
+    const pairEvent = new PairEvent()
+    pairEvent.event_id = event_id
+    pairEvent.pair_address = data.pairAddress
+    pairEvent.transaction_hash = transaction_hash
+    pairEvent.event_data = JSON.stringify(data.event_data)
+    pairEvent.key_name = data.name
+    pairEvent.block_number = data.block_number
+    pairEvent.event_time = new Date(data.timestamp * 1000)
+    pairEvent.cursor = cursor
+    pairEvent.source_data = JSON.stringify(data)
+    pairEvent.status = 0
+
+    if (['Swap', 'Mint', 'Burn'].indexOf(pairEvent.key_name) === -1) {
+      pairEvent.status = 99
+    }
+
+    return this.repoPairEvent.save(pairEvent)
   }
 }

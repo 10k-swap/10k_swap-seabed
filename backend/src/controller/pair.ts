@@ -22,4 +22,24 @@ export default function (router: KoaRouter<DefaultState, Context>) {
 
     restful.json(result)
   })
+
+  router.post('pair/events/completion', async ({ restful, request }) => {
+    const params = plainToInstance(
+      class {
+        from_block: number
+        to_block?: number
+      },
+      request.body
+    )
+    console.warn('params:', params)
+
+    // Enter background execution
+    new PairEventService().completion(params.from_block, params.to_block)
+
+    restful.json({ status: 'Received' })
+  })
+
+  router.get('pair/events/completion_status', async ({ restful }) => {
+    restful.json(PairEventService.completionStatus)
+  })
 }
