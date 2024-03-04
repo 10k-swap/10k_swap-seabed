@@ -47,7 +47,7 @@ export default function (router: KoaRouter<DefaultState, Context>) {
   const pairTransactionService = new PairTransactionService()
   const okxService = new OKXService()
 
-  // Swap from ETH to STRK ( min 10$ liquidity in 1 txn)
+  // Swap from ETH to STRK or STRK to ETH ( min 10$ liquidity in 1 txn)
   router.post('activity/starknet_defispring/query1', async (ctx) => {
     await intractIOCall(ctx, async (address) => {
       const pair = PoolService.pairs.find(
@@ -65,16 +65,25 @@ export default function (router: KoaRouter<DefaultState, Context>) {
 
       let isAchieved = false
       for (const item of list) {
-        // Only ETH to STRK
-        if (item.swap_reverse != 1) continue
+        let usd = 0
 
-        const usd1 = await okxService.exchangeToUsd(
-          item.amount1,
-          pair.token1.decimals,
-          pair.token1.symbol
-        )
+        if (item.swap_reverse == 1) {
+          // ETH to STRK
+          usd = await okxService.exchangeToUsd(
+            item.amount1,
+            pair.token1.decimals,
+            pair.token1.symbol
+          )
+        } else {
+          // STRK to ETH
+          usd = await okxService.exchangeToUsd(
+            item.amount0,
+            pair.token0.decimals,
+            pair.token0.symbol
+          )
+        }
 
-        if (Math.round(usd1) >= 10) {
+        if (Math.round(usd) >= 10) {
           isAchieved = true
           break
         }
