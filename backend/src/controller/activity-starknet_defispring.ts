@@ -93,7 +93,7 @@ export default function (router: KoaRouter<DefaultState, Context>) {
     })
   })
 
-  // Swap from USDC/ USDT to STRK ( min 10$ liquidity in 1 txn)
+  // Swap from USDC/USDT to STRK or STRK to USDC/USDT (min 10$ liquidity in 1 txn)
   router.post('activity/starknet_defispring/query2', async (ctx) => {
     await intractIOCall(ctx, async (address) => {
       const pairSTRK_USDC = PoolService.pairs.find(
@@ -118,9 +118,6 @@ export default function (router: KoaRouter<DefaultState, Context>) {
 
       let isAchieved = false
       for (const item of list) {
-        // Only USDC/USDT to STRK
-        if (item.swap_reverse != 1) continue
-
         const pair =
           item.pair_address == pairSTRK_USDC.pairAddress
             ? pairSTRK_USDC
@@ -129,13 +126,25 @@ export default function (router: KoaRouter<DefaultState, Context>) {
             : undefined
         if (!pair) continue
 
-        const usd1 = await okxService.exchangeToUsd(
-          item.amount1,
-          pair.token1.decimals,
-          pair.token1.symbol
-        )
+        let usd = 0
 
-        if (Math.round(usd1) >= 10) {
+        if (item.swap_reverse == 1) {
+          // USDC/USDT to STRK
+          usd = await okxService.exchangeToUsd(
+            item.amount1,
+            pair.token1.decimals,
+            pair.token1.symbol
+          )
+        } else {
+          // STRK to USDC/USDT
+          usd = await okxService.exchangeToUsd(
+            item.amount0,
+            pair.token0.decimals,
+            pair.token0.symbol
+          )
+        }
+
+        if (Math.round(usd) >= 10) {
           isAchieved = true
           break
         }
@@ -145,7 +154,7 @@ export default function (router: KoaRouter<DefaultState, Context>) {
     })
   })
 
-  // Swap from USDC/ USDT to ETH ( min 10$ liquidity in 1 txn)
+  // Swap from USDC/USDT to ETH or ETH to USDC/USDT (min 10$ liquidity in 1 txn)
   router.post('activity/starknet_defispring/query3', async (ctx) => {
     await intractIOCall(ctx, async (address) => {
       const pairETH_USDC = PoolService.pairs.find(
@@ -170,9 +179,6 @@ export default function (router: KoaRouter<DefaultState, Context>) {
 
       let isAchieved = false
       for (const item of list) {
-        // Only USDC/USDT to ETH
-        if (item.swap_reverse != 1) continue
-
         const pair =
           item.pair_address == pairETH_USDC.pairAddress
             ? pairETH_USDC
@@ -181,13 +187,25 @@ export default function (router: KoaRouter<DefaultState, Context>) {
             : undefined
         if (!pair) continue
 
-        const usd1 = await okxService.exchangeToUsd(
-          item.amount1,
-          pair.token1.decimals,
-          pair.token1.symbol
-        )
+        let usd = 0
 
-        if (Math.round(usd1) >= 10) {
+        if (item.swap_reverse == 1) {
+          // USDC/USDT to ETH
+          usd = await okxService.exchangeToUsd(
+            item.amount1,
+            pair.token1.decimals,
+            pair.token1.symbol
+          )
+        } else {
+          // ETH to USDC/USDT
+          usd = await okxService.exchangeToUsd(
+            item.amount0,
+            pair.token0.decimals,
+            pair.token0.symbol
+          )
+        }
+
+        if (Math.round(usd) >= 10) {
           isAchieved = true
           break
         }
