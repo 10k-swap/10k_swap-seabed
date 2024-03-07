@@ -1,5 +1,7 @@
 import { RpcProvider } from 'starknet'
 import { isDevelopEnv } from '../util'
+import { rpcConfig } from '../config'
+import _ from 'lodash'
 
 export class RpcsService {
   defaultRpcProvider() {
@@ -28,11 +30,13 @@ export class RpcsService {
   }
 
   alchemyRpcProvider() {
-    return new RpcProvider({
-      nodeUrl: isDevelopEnv()
-        ? 'https://starknet-goerli.g.alchemy.com/v2/qtdLys1T51z8inozPo7lSOfQ9mQueQRj'
-        : 'https://starknet-mainnet.g.alchemy.com/v2/TgQ5rUXPT1XZUHaSCAzST3j17C2eu27x',
-    })
+    if (rpcConfig.alchemyEndpoints.length <= 0) {
+      throw new Error('Miss alchemy rpc endpoint.')
+    }
+
+    const endpoint = _.sample(rpcConfig.alchemyEndpoints)
+
+    return new RpcProvider({ nodeUrl: endpoint })
   }
 
   static createRandomRpcProvider() {

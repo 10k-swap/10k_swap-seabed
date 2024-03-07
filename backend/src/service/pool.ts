@@ -136,12 +136,19 @@ export class PoolService {
       ? JSON.parse(eventsCacheValue) || []
       : []
     if (!Array.isArray(events) || events.length <= 0) {
-      events = (
-        await rpcProvider.getEvents({
+      let continuation_token: string | undefined = undefined
+      while (true) {
+        const result = await rpcProvider.getEvents({
           address: this.factoryAddress,
           chunk_size: 100,
+          continuation_token,
         })
-      ).events
+
+        events = events.concat(result.events)
+
+        continuation_token = result.continuation_token
+        if (continuation_token === undefined) break
+      }
 
       if (!events || events.length < 1) {
         errorLogger.error('Get factory events failed')
