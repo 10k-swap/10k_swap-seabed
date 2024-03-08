@@ -1,4 +1,4 @@
-import { BigNumberish, num } from 'starknet'
+import { BigNumberish, num, RPC } from 'starknet'
 import { PAIR_CREATED_EVENT_KEY } from '../constants'
 import { PairReserve } from '../model/pair_reserve'
 import { get10kStartBlockByEnv, sleep } from '../util'
@@ -7,6 +7,11 @@ import { accessLogger } from '../util/logger'
 import { PoolService } from './pool'
 import { StarknetService } from './starknet'
 import { RpcsService } from './rpcs'
+
+const cachePairCreatedEvents: {
+  updateTime: number
+  events: RPC.SPEC.EMITTED_EVENT[]
+} = { updateTime: 0, events: [] }
 
 export class PairReservesService {
   constructor(private repoPairReserve = Core.db.getRepository(PairReserve)) {}
@@ -21,9 +26,17 @@ export class PairReservesService {
       }
     }
 
-    const events = await new PoolService().getPairCreatedEvents()
+    let events = cachePairCreatedEvents.events
+    const nowTime = new Date().getTime()
+    if (
+      nowTime - cachePairCreatedEvents.updateTime > 300_000 ||
+      events.length == 0
+    ) {
+      events = await new PoolService().getPairCreatedEvents()
+      cachePairCreatedEvents.events = events
+    }
 
-    await Promise.allSettled(
+    await Promise.all(
       events.map((item) => {
         const { block_number, keys, data } = item
         if (keys[0] != PAIR_CREATED_EVENT_KEY || data.length != 4) {
@@ -53,7 +66,7 @@ export class PairReservesService {
     for (; i <= StarknetService.latestBlockNumber; i++) {
       bnArray.push(i)
 
-      if (i % 20 === 0 || i >= StarknetService.latestBlockNumber) {
+      if (i % 10 === 0 || i >= StarknetService.latestBlockNumber) {
         accessLogger.info(
           `Collect pairReserves[${pairAddress}], blockNumbers: ${bnArray.join(
             ', '
