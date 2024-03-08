@@ -53,7 +53,7 @@ export class PairReservesService {
     for (; i <= StarknetService.latestBlockNumber; i++) {
       bnArray.push(i)
 
-      if (i % 10 === 0 || i >= StarknetService.latestBlockNumber) {
+      if (i % 20 === 0 || i >= StarknetService.latestBlockNumber) {
         accessLogger.info(
           `Collect pairReserves[${pairAddress}], blockNumbers: ${bnArray.join(
             ', '
