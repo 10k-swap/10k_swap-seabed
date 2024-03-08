@@ -59,7 +59,7 @@ export class PairReservesService {
     pairAddress: string,
     defaultStartBlockNumber = get10kStartBlockByEnv()
   ) {
-    const lastPairReserves = await this.repoPairReserve.findOne(undefined, {
+    const lastPairReserves = await this.repoPairReserve.findOne({
       select: ['block_number'],
       where: { pair_address: pairAddress },
       order: { block_number: 'DESC' },
