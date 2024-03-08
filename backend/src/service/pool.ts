@@ -2,7 +2,7 @@ import {
   ArgsOrCalldataWithOptions,
   AsyncContractFunction,
   Contract,
-  hash,
+  RPC,
   num,
   uint256,
 } from 'starknet'
@@ -18,6 +18,7 @@ import { accessLogger, errorLogger } from '../util/logger'
 import { AnalyticsService } from './analytics'
 import { OKXService } from './okx'
 import { RpcsService } from './rpcs'
+import { PAIR_CREATED_EVENT_KEY } from '../constants'
 
 export type Pair = {
   token0: { address: string; name: string; symbol: string; decimals: number }
@@ -44,11 +45,8 @@ export class PoolService {
   private static cacheErc20Infos: { [key: string]: any } = {}
 
   private factoryAddress: string
-  private eventKey: string
 
   constructor() {
-    this.eventKey = 'PairCreated'
-
     if (isDevelopEnv()) {
       this.factoryAddress = contractConfig.addresses.goerli.factory
     } else {
@@ -126,9 +124,6 @@ export class PoolService {
       if (new Date().getTime() - _time < 600000) return
     }
 
-    const eventKeyHash = hash.getSelectorFromName(this.eventKey)
-    const rpcProvider = new RpcsService().alchemyRpcProvider()
-
     const eventsCacheKey = 'pool_service-collect-events'
     const eventsCacheValue = await Core.redis.get(eventsCacheKey)
 
@@ -136,19 +131,7 @@ export class PoolService {
       ? JSON.parse(eventsCacheValue) || []
       : []
     if (!Array.isArray(events) || events.length <= 0) {
-      let continuation_token: string | undefined = undefined
-      while (true) {
-        const result = await rpcProvider.getEvents({
-          address: this.factoryAddress,
-          chunk_size: 100,
-          continuation_token,
-        })
-
-        events = events.concat(result.events)
-
-        continuation_token = result.continuation_token
-        if (continuation_token === undefined) break
-      }
+      events = await this.getPairCreatedEvents()
 
       if (!events || events.length < 1) {
         errorLogger.error('Get factory events failed')
@@ -165,7 +148,7 @@ export class PoolService {
     for (const item of events) {
       const { keys, data } = item
 
-      if (keys[0] != eventKeyHash || data.length != 4) {
+      if (keys[0] != PAIR_CREATED_EVENT_KEY || data.length != 4) {
         continue
       }
 
@@ -244,5 +227,26 @@ export class PoolService {
 
     // Replace PoolService._pairs
     PoolService.pairs = _pairs
+  }
+
+  async getPairCreatedEvents() {
+    const rpcProvider = new RpcsService().alchemyRpcProvider()
+
+    let events: RPC.SPEC.EMITTED_EVENT[] = []
+    let continuation_token: string | undefined = undefined
+    while (true) {
+      const result = await rpcProvider.getEvents({
+        address: this.factoryAddress,
+        chunk_size: 100,
+        continuation_token,
+      })
+
+      events = events.concat(result.events)
+
+      continuation_token = result.continuation_token
+      if (continuation_token === undefined) break
+    }
+
+    return events
   }
 }

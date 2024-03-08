@@ -2,6 +2,7 @@ import { appConfig } from '../config'
 import { accessLogger } from '../util/logger'
 import {
   jobCacheTVLsByDayAndVolumesByDay,
+  jobCollectPairReserves,
   jobCollectSNBlock,
   jobOKXCache,
   jobPairEventStartWork,
@@ -34,6 +35,7 @@ export const startMasterJobs = async () => {
   jobPairTransactionPurify()
   jobPairTransactionAccountAddress()
   jobPairTransferPurify()
+  jobCollectPairReserves()
 
   jobCacheTVLsByDayAndVolumesByDay()
 }
