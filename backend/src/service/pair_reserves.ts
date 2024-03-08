@@ -3,7 +3,7 @@ import { PAIR_CREATED_EVENT_KEY } from '../constants'
 import { PairReserve } from '../model/pair_reserve'
 import { get10kStartBlockByEnv, sleep } from '../util'
 import { Core } from '../util/core'
-import { accessLogger } from '../util/logger'
+import { accessLogger, errorLogger } from '../util/logger'
 import { PoolService } from './pool'
 import { StarknetService } from './starknet'
 import { RpcsService } from './rpcs'
@@ -42,7 +42,7 @@ export class PairReservesService {
     )
 
     await Promise.all(
-      events.map((item) => {
+      events.map(async (item) => {
         const { block_number, keys, data } = item
         if (keys[0] != PAIR_CREATED_EVENT_KEY || data.length != 4) {
           return
@@ -50,7 +50,18 @@ export class PairReservesService {
 
         const pairAddress = num.toHex(data[2])
 
-        return this.collectPairReservesOne(pairAddress, block_number)
+        // Do not throw an error when an exception occurs, otherwise it will cause other Promises to run in the background, resulting in data anomalies.
+        while (true) {
+          try {
+            await this.collectPairReservesOne(pairAddress, block_number)
+            break
+          } catch (err) {
+            errorLogger.error(
+              `CollectPairReservesOne failed, pairAddress[${pairAddress}], block_number:${block_number}, error:${err.message}`
+            )
+            await sleep(3000)
+          }
+        }
       })
     )
   }
@@ -105,7 +116,7 @@ export class PairReservesService {
   async getPairReservesByBlockNumber(
     blockNumber: number,
     pairAddress: string,
-    tryCount = 5
+    tryCount = 10
   ): Promise<{
     blockNumber: number
     pairAddress: string
