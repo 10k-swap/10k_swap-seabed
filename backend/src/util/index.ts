@@ -8,6 +8,7 @@ import {
 } from 'starknet'
 import { ADDRESS_ZORE } from '../constants'
 import { RpcsService } from '../service/rpcs'
+import { BigNumber } from 'ethers'
 
 export async function sleep(ms: number) {
   return new Promise((resolve) => {
@@ -135,4 +136,8 @@ export function bigNumberishToUtf8(value: BigNumberish) {
 
 export function get10kStartBlockByEnv() {
   return isDevelopEnv() ? 317000 : 4000
+}
+
+export function equalBN(bn0: BigNumberish, bn1: BigNumberish) {
+  return BigNumber.from(bn0).eq(bn1)
 }

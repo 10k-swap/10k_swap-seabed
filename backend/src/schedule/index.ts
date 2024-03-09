@@ -1,6 +1,7 @@
 import { appConfig } from '../config'
 import { accessLogger } from '../util/logger'
 import {
+  jobDefispringCacheQaSTRKGrant,
   jobCacheTVLsByDayAndVolumesByDay,
   jobCollectPairReserves,
   jobCollectSNBlock,
@@ -11,6 +12,7 @@ import {
   jobPairTransferPurify,
   jobPoolCollect,
   jobUpdateLatestBlockNumber,
+  jobDefispringStatistics,
 } from './jobs'
 
 export const startMasterJobs = async () => {
@@ -38,6 +40,9 @@ export const startMasterJobs = async () => {
   jobCollectPairReserves()
 
   jobCacheTVLsByDayAndVolumesByDay()
+
+  jobDefispringStatistics()
+  jobDefispringCacheQaSTRKGrant()
 }
 
 export const startWorkerJobs = async () => {}

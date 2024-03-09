@@ -9,6 +9,7 @@ import { PoolService } from '../service/pool'
 import { StarknetService } from '../service/starknet'
 import { errorLogger } from '../util/logger'
 import { PairReservesService } from '../service/pair_reserves'
+import { ActivityDefispringService } from '../service/activity_defispring'
 
 // import { doSms } from '../sms/smsSchinese'
 class MJob {
@@ -213,5 +214,29 @@ export function jobCollectSNBlock() {
     '*/20 * * * * *',
     callback,
     jobCollectSNBlock.name
+  ).schedule()
+}
+
+export function jobDefispringStatistics() {
+  const callback = async () => {
+    await new ActivityDefispringService().startStatistics()
+  }
+
+  new MJobPessimism(
+    '*/10 * * * * *',
+    callback,
+    jobDefispringStatistics.name
+  ).schedule()
+}
+
+export function jobDefispringCacheQaSTRKGrant() {
+  const callback = async () => {
+    await new ActivityDefispringService().cacheQaSTRKGrant()
+  }
+
+  new MJobPessimism(
+    '*/10 * * * * *',
+    callback,
+    jobDefispringCacheQaSTRKGrant.name
   ).schedule()
 }

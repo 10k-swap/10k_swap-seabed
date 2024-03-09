@@ -27,6 +27,19 @@ services:
     networks:
       - l0k_swap-network
 
+  defispring:
+    build: ./defispring
+    command: ./api_run
+    env_file:
+      - .env
+    volumes:
+      - './defispring/raw_input:/app/raw_input'
+    ports:
+      - '8080:8080'
+    restart: always
+    networks:
+      - l0k_swap-network
+
   twitter-crawl:
     build: ./twitter-crawl
     command: ./twitter-crawl
