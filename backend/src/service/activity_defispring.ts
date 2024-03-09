@@ -1,22 +1,27 @@
 import axios from 'axios'
-import { PairTransfer } from '../model/pair_transfer'
-import { Core } from '../util/core'
+import dayjs from 'dayjs'
+import { BigNumber } from 'ethers'
 import { BigNumberish } from 'starknet'
 import { MoreThan } from 'typeorm'
+import { ActivityDefispring } from '../model/activity_defispring'
+import { PairTransfer } from '../model/pair_transfer'
 import { equalBN } from '../util'
-import { BigNumber } from 'ethers'
+import { Core } from '../util/core'
 
 type AccountHValue = Record<
   string,
   {
     balanceOf: BigNumberish
-    lastTransactionHash: string
-    lastTimestamp: number
+    partition: BigNumberish
+    lastTime: number
   }
 >
 
-const startTimestamp = 1708560000 // Start: 2024-02-22 00:00:00(UTC-0)
-const endTimestamp = 1715904000 // End: 2024-05-17 00:00:00(UTC-0)
+const activityStartTime = 1708560000000 // Start: 2024-02-22 00:00:00(UTC-0)
+const activityEndTime = 1715904000000 // End: 2024-05-17 00:00:00(UTC-0)
+
+// const activityStartTime = 1664582400000 // Start: 2022-10-01 00:00:00(UTC-0) //TODO
+// const activityEndTime = 1664582400000 + 86400 * 20 * 1000 // End: 2022-10-20 00:00:00(UTC-0) //TODO
 
 export class ActivityDefispringService {
   public static qaSTRKGrant?: Record<
@@ -42,16 +47,20 @@ export class ActivityDefispringService {
 
   private accountHKey = 'ActivityDefispring_AccountH'
 
-  constructor(private pairTransfer = Core.db.getRepository(PairTransfer)) {}
+  constructor(
+    private repoPairTransfer = Core.db.getRepository(PairTransfer),
+    private repoActivityDefispring = Core.db.getRepository(ActivityDefispring),
+    private activityCurrentTime = activityStartTime
+  ) {}
 
   async startStatistics() {
     await Core.redis.del(this.accountHKey)
 
     let lastId = 0
-    while (true) {
-      const startTime = new Date().getTime()
+    let lastPairTransfer: PairTransfer | undefined = undefined
 
-      const transfers = await this.pairTransfer.find({
+    while (true) {
+      const transfers = await this.repoPairTransfer.find({
         where: { id: MoreThan(lastId) },
         order: { event_time: 'ASC', id: 'ASC' },
         take: 20000,
@@ -59,40 +68,66 @@ export class ActivityDefispringService {
 
       if (transfers.length <= 0) break
 
-      await this.statisticsBatch(transfers)
+      for (const item of transfers) {
+        if (new Date(item.event_time).getTime() > activityEndTime) {
+          break
+        }
 
-      console.log('Used time: ', new Date().getTime() - startTime)
+        if (
+          this.activityCurrentTime >
+            new Date(lastPairTransfer?.event_time || 0).getTime() &&
+          this.activityCurrentTime <= new Date(item.event_time).getTime()
+        ) {
+          await this.gatherAccounts()
+
+          this.activityCurrentTime = this.activityCurrentTime + 86400000
+        }
+
+        // Filter
+        if (equalBN(item.from_address, item.token_address)) continue
+        if (equalBN(item.from_address, item.recipient_address)) continue
+
+        // Mint
+        if (
+          equalBN(item.from_address, 0) &&
+          !equalBN(item.recipient_address, 0)
+        ) {
+          await this.mint(
+            item.token_address,
+            item.recipient_address,
+            item.amount,
+            item.event_time
+          )
+          continue
+        }
+
+        // Burn
+        if (
+          !equalBN(item.from_address, 0) &&
+          equalBN(item.recipient_address, item.token_address)
+        ) {
+          await this.burn(
+            item.token_address,
+            item.from_address,
+            item.amount,
+            item.event_time
+          )
+          continue
+        }
+
+        // Transfer
+        await this.transfer(
+          item.token_address,
+          item.from_address,
+          item.recipient_address,
+          item.amount,
+          item.event_time
+        )
+
+        lastPairTransfer = item
+      }
 
       lastId = transfers[transfers.length - 1].id
-    }
-  }
-
-  private async statisticsBatch(transfers: PairTransfer[]) {
-    for (const item of transfers) {
-      // Filter
-      if (equalBN(item.from_address, item.token_address)) continue
-      if (equalBN(item.from_address, item.recipient_address)) continue
-
-      // Mint
-      if (
-        equalBN(item.from_address, 0) &&
-        !equalBN(item.recipient_address, 0)
-      ) {
-        await this.mint(item)
-        continue
-      }
-
-      // Burn
-      if (
-        !equalBN(item.from_address, 0) &&
-        equalBN(item.recipient_address, item.token_address)
-      ) {
-        await this.burn(item)
-        continue
-      }
-
-      // Transfer
-      await this.transfer(item)
     }
   }
 
@@ -104,22 +139,87 @@ export class ActivityDefispringService {
     if (status == 200 && data) ActivityDefispringService.qaSTRKGrant = data
   }
 
-  private async mint(pairTransfer: PairTransfer) {
-    const token = pairTransfer.token_address
-    const account = pairTransfer.recipient_address
+  private async gatherAccounts() {
+    const day = dayjs(this.activityCurrentTime).format('YYYY-MM-DD')
 
+    let cursor = '0'
+    while (true) {
+      const [_cursor, _kvs] = await Core.redis.hscan(
+        this.accountHKey,
+        cursor,
+        'COUNT',
+        100
+      )
+      cursor = _cursor
+
+      const accounts: [string, AccountHValue][] = []
+      for (let index = 0; index < _kvs.length; index += 2) {
+        accounts.push([_kvs[index], JSON.parse(_kvs[index + 1])])
+      }
+
+      await Promise.all(
+        accounts.map(async (item) => {
+          for (const pairAddress in item[1]) {
+            const one = await this.repoActivityDefispring.findOne(
+              { account_address: item[0], pair_address: pairAddress, day },
+              {
+                select: ['id'],
+              }
+            )
+            if (one) {
+              await this.repoActivityDefispring.update(one.id, {
+                balance_of: item[1][pairAddress].balanceOf + '',
+                partition: item[1][pairAddress].partition + '',
+              })
+            } else {
+              await this.repoActivityDefispring.insert({
+                pair_address: pairAddress,
+                account_address: item[0],
+                balance_of: item[1][pairAddress].balanceOf + '',
+                partition: item[1][pairAddress].partition + '',
+                day,
+              })
+            }
+
+            item[1][pairAddress].partition =
+              BigNumber.from(item[1][pairAddress].balanceOf).mul(86400) + ''
+          }
+
+          await Core.redis.hset(
+            this.accountHKey,
+            item[0],
+            JSON.stringify(item[1])
+          )
+        })
+      )
+
+      if (cursor == '0') break
+    }
+  }
+
+  private async mint(
+    tokenAddress: string,
+    account: string,
+    amount: BigNumberish,
+    eventTime: Date
+  ) {
     const value = await Core.redis.hget(this.accountHKey, account)
     const accountCache: AccountHValue = value ? JSON.parse(value) : {}
+    const lastTime = new Date(eventTime).getTime()
 
-    accountCache[token] = {
+    const plusPartition = BigNumber.from(amount).mul(
+      parseInt((this.activityCurrentTime - lastTime) / 1000 + '')
+    )
+
+    accountCache[tokenAddress] = {
       balanceOf:
-        BigNumber.from(accountCache[token]?.balanceOf || 0).add(
-          pairTransfer.amount
+        BigNumber.from(accountCache[tokenAddress]?.balanceOf || 0).add(amount) +
+        '',
+      partition:
+        BigNumber.from(accountCache[tokenAddress]?.partition || 0).add(
+          plusPartition
         ) + '',
-      lastTransactionHash: pairTransfer.transaction_hash,
-      lastTimestamp: parseInt(
-        new Date(pairTransfer.event_time).getTime() / 1000 + ''
-      ),
+      lastTime,
     }
 
     await Core.redis.hset(
@@ -129,22 +229,29 @@ export class ActivityDefispringService {
     )
   }
 
-  private async burn(pairTransfer: PairTransfer) {
-    const token = pairTransfer.token_address
-    const account = pairTransfer.from_address
-
+  private async burn(
+    tokenAddress: string,
+    account: string,
+    amount: BigNumberish,
+    eventTime: Date
+  ) {
     const value = await Core.redis.hget(this.accountHKey, account)
     const accountCache: AccountHValue = value ? JSON.parse(value) : {}
+    const lastTime = new Date(eventTime).getTime()
 
-    accountCache[token] = {
+    const subPartition = BigNumber.from(amount).mul(
+      parseInt((this.activityCurrentTime - lastTime) / 1000 + '')
+    )
+
+    accountCache[tokenAddress] = {
       balanceOf:
-        BigNumber.from(accountCache[token]?.balanceOf || 0).sub(
-          pairTransfer.amount
+        BigNumber.from(accountCache[tokenAddress]?.balanceOf || 0).sub(amount) +
+        '',
+      partition:
+        BigNumber.from(accountCache[tokenAddress]?.partition || 0).sub(
+          subPartition
         ) + '',
-      lastTransactionHash: pairTransfer.transaction_hash,
-      lastTimestamp: parseInt(
-        new Date(pairTransfer.event_time).getTime() / 1000 + ''
-      ),
+      lastTime,
     }
 
     await Core.redis.hset(
@@ -154,5 +261,14 @@ export class ActivityDefispringService {
     )
   }
 
-  private async transfer(pairTransfer: PairTransfer) {}
+  private async transfer(
+    tokenAddress: string,
+    fromAccount: string,
+    recipientAccount: string,
+    amount: BigNumberish,
+    eventTime: Date
+  ) {
+    await this.burn(tokenAddress, fromAccount, amount, eventTime)
+    await this.mint(tokenAddress, recipientAccount, amount, eventTime)
+  }
 }
