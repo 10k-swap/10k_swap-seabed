@@ -198,6 +198,7 @@ export class ActivityDefispringService {
           pair_address: pairAddress,
           day,
           rewards: IsNull(),
+          balance_of: MoreThan(0),
         },
         take: 100,
         order: { id: 'ASC' },
