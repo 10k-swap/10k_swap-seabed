@@ -24,4 +24,7 @@ export class ActivityDefispring extends CommonEntity {
 
   @Column('varchar', { length: 256 })
   day: string
+
+  @Column('varchar', { length: 256, default: null })
+  rewards: string | null
 }

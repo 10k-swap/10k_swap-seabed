@@ -197,6 +197,7 @@ export class ActivityDefispringService {
               balance_of: item[1][pairAddress].balanceOf + '',
               partition: item[1][pairAddress].partition + '',
               day,
+              rewards: null,
             })
             // }
 
