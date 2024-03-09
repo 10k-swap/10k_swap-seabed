@@ -3,7 +3,7 @@ import { accessLogger } from '../util/logger'
 import {
   jobDefispringCacheQaSTRKGrant,
   jobCacheTVLsByDayAndVolumesByDay,
-  jobCollectPairReserves,
+  // jobCollectPairReserves,
   jobCollectSNBlock,
   jobOKXCache,
   jobPairEventStartWork,
@@ -37,7 +37,7 @@ export const startMasterJobs = async () => {
   jobPairTransactionPurify()
   jobPairTransactionAccountAddress()
   jobPairTransferPurify()
-  jobCollectPairReserves()
+  // jobCollectPairReserves()
 
   jobCacheTVLsByDayAndVolumesByDay()
 
