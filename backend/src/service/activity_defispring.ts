@@ -17,11 +17,18 @@ type AccountHValue = Record<
   }
 >
 
-const activityStartTime = 1708560000000 // Start: 2024-02-22 00:00:00(UTC-0)
-const activityEndTime = 1715904000000 // End: 2024-05-17 00:00:00(UTC-0)
+// const activityStartTime = 1708560000000 // Start: 2024-02-22 00:00:00(UTC-0)
+// const activityEndTime = 1715990400000 // End: 2024-05-18 00:00:00(UTC-0)
 
-// const activityStartTime = 1664582400000 // Start: 2022-10-01 00:00:00(UTC-0) //TODO
-// const activityEndTime = 1664582400000 + 86400 * 20 * 1000 // End: 2022-10-20 00:00:00(UTC-0) //TODO
+const activityStartTime = 1664582400000 // Start: 2022-10-01 00:00:00(UTC-0) //TODO
+const activityEndTime = 1664582400000 + 86400 * 20 * 1000 // End: 2022-10-20 00:00:00(UTC-0) //TODO
+
+enum QaSTRKGrantPair {
+  'USDC/USDT' = '0x41a708cf109737a50baa6cbeb9adf0bf8d97112dc6cc80c7a458cbad35328b0',
+  'STRK/ETH' = '0x4ad445ffb6294d1394b3f6a5610642d37c702eaaa47346b680c6af2f102192e',
+  'ETH/USDC' = '0x23c72abdf49dffc85ae3ede714f2168ad384cc67d08524732acea90df325',
+  'STRK/USDC' = '0x66733193503019e4e9472f598ff32f15951a0ddb8fb5001f0beaa8bd1fb6840',
+}
 
 export class ActivityDefispringService {
   public static qaSTRKGrant?: Record<
@@ -35,13 +42,13 @@ export class ActivityDefispringService {
     | 'Jediswap_v1',
     Record<
       'USDC/USDT' | 'STRK/ETH' | 'ETH/USDC' | 'STRK/USDC',
-      {
+      Array<{
         date: string
         allocation: number
         thirty_day_realized_volatility: number
         tvl_usd: number
         apr: number
-      }
+      }>
     >
   > = undefined
 
@@ -131,12 +138,24 @@ export class ActivityDefispringService {
     }
   }
 
+  async statisticsSTRKRewards() {
+    const l0kswap = ActivityDefispringService.qaSTRKGrant?.['10kSwap']
+    if (!l0kswap) return
+  }
+
   async cacheQaSTRKGrant() {
     const { data, status } = await axios.get(
       'https://kx58j6x5me.execute-api.us-east-1.amazonaws.com//starknet/fetchFile?file=qa_strk_grant.json'
     )
 
-    if (status == 200 && data) ActivityDefispringService.qaSTRKGrant = data
+    if (status == 200 && data) {
+      ActivityDefispringService.qaSTRKGrant = data
+      await Core.redis.hset(
+        'cacheQaSTRKGrant',
+        dayjs().format('YYYY-MM-DD HH:mm:ss'),
+        JSON.stringify(data)
+      )
+    }
   }
 
   private async gatherAccounts() {
@@ -148,7 +167,7 @@ export class ActivityDefispringService {
         this.accountHKey,
         cursor,
         'COUNT',
-        100
+        500
       )
       cursor = _cursor
 
@@ -160,26 +179,26 @@ export class ActivityDefispringService {
       await Promise.all(
         accounts.map(async (item) => {
           for (const pairAddress in item[1]) {
-            const one = await this.repoActivityDefispring.findOne(
-              { account_address: item[0], pair_address: pairAddress, day },
-              {
-                select: ['id'],
-              }
-            )
-            if (one) {
-              await this.repoActivityDefispring.update(one.id, {
-                balance_of: item[1][pairAddress].balanceOf + '',
-                partition: item[1][pairAddress].partition + '',
-              })
-            } else {
-              await this.repoActivityDefispring.insert({
-                pair_address: pairAddress,
-                account_address: item[0],
-                balance_of: item[1][pairAddress].balanceOf + '',
-                partition: item[1][pairAddress].partition + '',
-                day,
-              })
-            }
+            // const one = await this.repoActivityDefispring.findOne(
+            //   { account_address: item[0], pair_address: pairAddress, day },
+            //   {
+            //     select: ['id'],
+            //   }
+            // )
+            // if (one) {
+            //   await this.repoActivityDefispring.update(one.id, {
+            //     balance_of: item[1][pairAddress].balanceOf + '',
+            //     partition: item[1][pairAddress].partition + '',
+            //   })
+            // } else {
+            await this.repoActivityDefispring.insert({
+              pair_address: pairAddress,
+              account_address: item[0],
+              balance_of: item[1][pairAddress].balanceOf + '',
+              partition: item[1][pairAddress].partition + '',
+              day,
+            })
+            // }
 
             item[1][pairAddress].partition =
               BigNumber.from(item[1][pairAddress].balanceOf).mul(86400) + ''

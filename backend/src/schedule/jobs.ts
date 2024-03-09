@@ -218,15 +218,17 @@ export function jobCollectSNBlock() {
 }
 
 export function jobDefispringStatistics() {
-  const callback = async () => {
-    await new ActivityDefispringService().startStatistics()
-  }
+  new ActivityDefispringService().startStatistics()
 
-  new MJobPessimism(
-    '*/10 * * * * *',
-    callback,
-    jobDefispringStatistics.name
-  ).schedule()
+  // const callback = async () => {
+  //   await new ActivityDefispringService().startStatistics()
+  // }
+
+  // new MJobPessimism(
+  //   '*/10 * * * * *',
+  //   callback,
+  //   jobDefispringStatistics.name
+  // ).schedule()
 }
 
 export function jobDefispringCacheQaSTRKGrant() {
@@ -235,8 +237,20 @@ export function jobDefispringCacheQaSTRKGrant() {
   }
 
   new MJobPessimism(
-    '*/10 * * * * *',
+    '*/30 * * * * *',
     callback,
     jobDefispringCacheQaSTRKGrant.name
-  ).schedule()
+  ).schedule(true)
+}
+
+export function jobDefispringStatisticsSTRKRewards() {
+  const callback = async () => {
+    await new ActivityDefispringService().statisticsSTRKRewards()
+  }
+
+  new MJobPessimism(
+    '*/10 * * * * *',
+    callback,
+    jobDefispringStatisticsSTRKRewards.name
+  ).schedule(true)
 }

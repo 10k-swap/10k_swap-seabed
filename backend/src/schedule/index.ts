@@ -13,6 +13,7 @@ import {
   jobPoolCollect,
   jobUpdateLatestBlockNumber,
   jobDefispringStatistics,
+  jobDefispringStatisticsSTRKRewards,
 } from './jobs'
 
 export const startMasterJobs = async () => {
@@ -43,6 +44,7 @@ export const startMasterJobs = async () => {
 
   jobDefispringStatistics()
   jobDefispringCacheQaSTRKGrant()
+  jobDefispringStatisticsSTRKRewards()
 }
 
 export const startWorkerJobs = async () => {}

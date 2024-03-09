@@ -3,7 +3,7 @@ import { CommonEntity } from './common'
 
 @Index(['pair_address'])
 @Index(['account_address'])
-@Index(['pair_address', 'account_address'])
+@Index(['account_address', 'pair_address', 'day'])
 @Entity()
 export class ActivityDefispring extends CommonEntity {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
