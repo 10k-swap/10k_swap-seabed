@@ -1,8 +1,8 @@
 import axios from 'axios'
 import dayjs from 'dayjs'
-import { BigNumber } from 'ethers'
+import { BigNumber, FixedNumber, utils } from 'ethers'
 import { BigNumberish } from 'starknet'
-import { MoreThan } from 'typeorm'
+import { Between, IsNull, MoreThan } from 'typeorm'
 import { ActivityDefispring } from '../model/activity_defispring'
 import { PairTransfer } from '../model/pair_transfer'
 import { equalBN } from '../util'
@@ -17,11 +17,11 @@ type AccountHValue = Record<
   }
 >
 
-const activityStartTime = 1708560000000 // Start: 2024-02-22 00:00:00(UTC-0)
-const activityEndTime = 1715990400000 // End: 2024-05-18 00:00:00(UTC-0)
+// const activityStartTime = 1708560000000 // Start: 2024-02-22 00:00:00(UTC-0)
+// const activityEndTime = 1715990400000 // End: 2024-05-18 00:00:00(UTC-0)
 
-// const activityStartTime = 1664582400000 // Start: 2022-10-01 00:00:00(UTC-0) //TODO
-// const activityEndTime = 1664582400000 + 86400 * 20 * 1000 // End: 2022-10-20 00:00:00(UTC-0) //TODO
+const activityStartTime = 1664582400000 // Start: 2022-10-01 00:00:00(UTC-0) //TODO
+const activityEndTime = 1664582400000 + 86400 * 20 * 1000 // End: 2022-10-20 00:00:00(UTC-0) //TODO
 
 enum QaSTRKGrantPair {
   'USDC/USDT' = '0x41a708cf109737a50baa6cbeb9adf0bf8d97112dc6cc80c7a458cbad35328b0',
@@ -61,6 +61,9 @@ export class ActivityDefispringService {
   ) {}
 
   async startStatistics() {
+    const exists = await Core.redis.exists(this.accountHKey)
+    if (exists) return
+
     await Core.redis.del(this.accountHKey)
 
     let lastId = 0
@@ -141,6 +144,77 @@ export class ActivityDefispringService {
   async statisticsSTRKRewards() {
     const l0kswap = ActivityDefispringService.qaSTRKGrant?.['10kSwap']
     if (!l0kswap) return
+
+    for (const key in l0kswap) {
+      const list: {
+        date: string
+        allocation: number
+      }[] = l0kswap[key]
+
+      const pairAddress = QaSTRKGrantPair[key]
+
+      await Promise.all(
+        list.map(async (item) => {
+          await this.statisticsSTRKRewardsOne(
+            pairAddress,
+            item.date,
+            item.allocation
+          )
+        })
+      )
+    }
+  }
+
+  async statisticsSTRKRewardsOne(
+    pairAddress: string,
+    day: string,
+    allocation: number
+  ) {
+    const allocationWei = utils.parseEther(allocation + '')
+
+    const upOne = await this.repoActivityDefispring.findOne({
+      select: ['id'],
+      where: { day: MoreThan(day) },
+    })
+    if (upOne?.id === undefined) return
+
+    const queryBuilder = this.repoActivityDefispring.createQueryBuilder()
+    queryBuilder.select(
+      `CONCAT(ROUND(SUM(CAST(balance_of as numeric)), 0), '') as sum_balance_of`
+    )
+    queryBuilder.where('pair_address = :pairAddress AND day = :day', {
+      pairAddress,
+      day,
+    })
+
+    const sumBalanceOf = (await queryBuilder.getRawMany())[0]?.sum_balance_of
+    if (!sumBalanceOf) return
+
+    let lastId = 0
+    while (true) {
+      const list = await this.repoActivityDefispring.find({
+        where: {
+          id: MoreThan(lastId),
+          pair_address: pairAddress,
+          day,
+          rewards: IsNull(),
+        },
+        take: 100,
+        order: { id: 'ASC' },
+      })
+
+      for (const item of list) {
+        if (BigNumber.from(item.balance_of).lte(0)) {
+          continue
+        }
+
+        const rewards =
+          BigNumber.from(allocationWei).mul(item.balance_of).div(sumBalanceOf) +
+          ''
+
+        await this.repoActivityDefispring.update(item.id, { rewards })
+      }
+    }
   }
 
   async cacheQaSTRKGrant() {
@@ -156,6 +230,17 @@ export class ActivityDefispringService {
         JSON.stringify(data)
       )
     }
+  }
+
+  async getRewardsByAccount(account: string, fromDay: string, toDay: string) {
+    const list = await this.repoActivityDefispring.find({
+      where: {
+        account_address: account,
+        day: Between(fromDay, toDay),
+      },
+    })
+
+    return list
   }
 
   private async gatherAccounts() {

@@ -1,12 +1,14 @@
 import { plainToInstance } from 'class-transformer'
-import { Context, DefaultState, Response } from 'koa'
+import { BigNumber } from 'ethers'
+import { formatEther } from 'ethers/lib/utils'
+import { Context, DefaultState } from 'koa'
 import KoaRouter from 'koa-router'
 import { addAddressPadding } from 'starknet'
 import { ServiceErrorCodes } from '../error/service'
-import { ActivityService } from '../service/activity'
+import { ActivityDefispringService } from '../service/activity_defispring'
+import { OKXService } from '../service/okx'
 import { PairTransactionService } from '../service/pair_transaction'
 import { PoolService } from '../service/pool'
-import { OKXService } from '../service/okx'
 
 async function intractIOCall(
   ctx: Context,
@@ -396,4 +398,38 @@ export default function (router: KoaRouter<DefaultState, Context>) {
       return Object.keys(pairAddresses).length >= 3
     })
   })
+
+  // Get rewards by account
+  router.post(
+    'activity/starknet_defispring/rewards',
+    async ({ request, restful }) => {
+      const params = plainToInstance(
+        class {
+          account: string
+          round: string
+        },
+        request.query
+      )
+
+      const account = addAddressPadding(params.account).toLocaleLowerCase()
+      // TODO
+      const rewards = await new ActivityDefispringService().getRewardsByAccount(
+        account,
+        '2024-02-22',
+        '2024-03-07'
+      )
+
+      let totalRewards = BigNumber.from(0)
+      const list = rewards.map((item) => {
+        const rewardsWei = BigNumber.from(item.rewards || 0)
+        totalRewards = totalRewards.add(rewardsWei)
+        return {
+          pair_address: item.pair_address,
+          rewards: formatEther(rewardsWei),
+        }
+      })
+
+      restful.json({ list, totalRewards: formatEther(totalRewards) })
+    }
+  )
 }
