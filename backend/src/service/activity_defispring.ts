@@ -174,7 +174,7 @@ export class ActivityDefispringService {
 
     const upOne = await this.repoActivityDefispring.findOne({
       select: ['id'],
-      where: { day: MoreThan(day) },
+      where: { pair_address: pairAddress, day: MoreThan(day) },
     })
     if (upOne?.id === undefined) return
 
