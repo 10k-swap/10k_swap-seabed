@@ -17,11 +17,11 @@ type AccountHValue = Record<
   }
 >
 
-// const activityStartTime = 1708560000000 // Start: 2024-02-22 00:00:00(UTC-0)
-// const activityEndTime = 1715990400000 // End: 2024-05-18 00:00:00(UTC-0)
+const activityStartTime = 1708560000000 // Start: 2024-02-22 00:00:00(UTC-0)
+const activityEndTime = 1715990400000 // End: 2024-05-18 00:00:00(UTC-0)
 
-const activityStartTime = 1664582400000 // Start: 2022-10-01 00:00:00(UTC-0) //TODO
-const activityEndTime = 1664582400000 + 86400 * 20 * 1000 // End: 2022-10-20 00:00:00(UTC-0) //TODO
+// const activityStartTime = 1664582400000 // Start: 2022-10-01 00:00:00(UTC-0) //TODO
+// const activityEndTime = 1664582400000 + 86400 * 20 * 1000 // End: 2022-10-20 00:00:00(UTC-0) //TODO
 
 enum QaSTRKGrantPair {
   'USDC/USDT' = '0x41a708cf109737a50baa6cbeb9adf0bf8d97112dc6cc80c7a458cbad35328b0',
