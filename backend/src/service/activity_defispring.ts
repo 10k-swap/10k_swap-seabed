@@ -200,7 +200,7 @@ export class ActivityDefispringService {
           rewards: IsNull(),
           balance_of: MoreThan(0),
         },
-        take: 2000,
+        take: 200,
         order: { id: 'ASC' },
       })
 
