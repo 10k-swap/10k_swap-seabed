@@ -148,16 +148,26 @@ export class PairEventService {
               (item) => item.block_number == blockInfo.block_number
             )
 
-            // It needs to be updated if the new events are longer than the old ones.
-            if (
-              targetSnBlock &&
+            if (!targetSnBlock) {
+              const one = await this.repoSnBlock.findOne({
+                block_number: blockNumber,
+              })
+              if (one === undefined) {
+                await this.repoSnBlock.save({
+                  block_number: blockNumber,
+                  block_hash: blockInfo.block_hash,
+                  block_data: blockInfo,
+                })
+                const saved = await this.repoSnBlock.findOne({
+                  block_number: blockNumber,
+                })
+                if (saved) snBlocks.push(saved)
+              }
+            } else if (
               starknetService.getBlockInfoEventsLength(blockInfo) >
-                starknetService.getBlockInfoEventsLength(
-                  targetSnBlock.block_data
-                )
+              starknetService.getBlockInfoEventsLength(targetSnBlock.block_data)
             ) {
-              console.warn('dddddddd:', new Date())
-
+              // It needs to be updated if the new events are longer than the old ones.
               await this.repoSnBlock.update(
                 { block_number: blockNumber },
                 { block_data: blockInfo }

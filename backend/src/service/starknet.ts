@@ -63,7 +63,7 @@ export class StarknetService {
           reject(new Error('Timeout Error'))
         }, 100000)
 
-        const rpcProvider = RpcsService.createRandomRpcProvider()
+        const rpcProvider = new RpcsService().alchemyRpcProvider()
 
         try {
           const r = await rpcProvider.getBlockWithTxHashes(blockNumber)
@@ -109,10 +109,10 @@ export class StarknetService {
     } catch (err) {
       tryCount += 1
 
-      if (tryCount > 10) throw err
+      if (tryCount > 30) throw err
 
       // Exponential Avoidance
-      const ms = parseInt(tryCount * tryCount * 200 + '')
+      const ms = parseInt(tryCount * 200 + '')
       await sleep(ms <= 5000 ? ms : 5000) // max: 5000ms
 
       return await this.getStarknetBlockInfo(blockNumber, tryCount)
@@ -130,7 +130,7 @@ export class StarknetService {
           reject(new Error('Timeout Error'))
         }, 30000)
 
-        const rpcProvider = RpcsService.createRandomRpcProvider()
+        const rpcProvider = new RpcsService().alchemyRpcProvider()
 
         try {
           const chunkSize = 1000
@@ -162,10 +162,10 @@ export class StarknetService {
       })
     } catch (err) {
       tryCount += 1
-      if (tryCount > 3) throw err
+      if (tryCount > 20) throw err
 
       // Exponential Avoidance
-      const ms = parseInt(tryCount * tryCount * 200 + '')
+      const ms = parseInt(tryCount * 200 + '')
       await sleep(ms <= 5000 ? ms : 5000) // max: 5000ms
 
       return await this.getStarknetBlockEvents(
