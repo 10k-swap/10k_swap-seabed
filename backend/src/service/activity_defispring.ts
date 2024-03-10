@@ -153,15 +153,13 @@ export class ActivityDefispringService {
 
       const pairAddress = QaSTRKGrantPair[key]
 
-      await Promise.all(
-        list.map(async (item) => {
-          await this.statisticsSTRKRewardsOne(
-            pairAddress,
-            item.date,
-            item.allocation
-          )
-        })
-      )
+      for (const item of list) {
+        await this.statisticsSTRKRewardsOne(
+          pairAddress,
+          item.date,
+          item.allocation
+        )
+      }
     }
   }
 
@@ -200,21 +198,24 @@ export class ActivityDefispringService {
           rewards: IsNull(),
           balance_of: MoreThan(0),
         },
-        take: 200,
+        take: 2000,
         order: { id: 'ASC' },
       })
 
-      for (const item of list) {
-        if (BigNumber.from(item.balance_of).lte(0)) {
-          continue
-        }
+      await Promise.all(
+        list.map(async (item) => {
+          if (BigNumber.from(item.balance_of).lte(0)) {
+            return
+          }
 
-        const rewards =
-          BigNumber.from(allocationWei).mul(item.balance_of).div(sumBalanceOf) +
-          ''
+          const rewards =
+            BigNumber.from(allocationWei)
+              .mul(item.balance_of)
+              .div(sumBalanceOf) + ''
 
-        await this.repoActivityDefispring.update(item.id, { rewards })
-      }
+          await this.repoActivityDefispring.update(item.id, { rewards })
+        })
+      )
     }
   }
 
