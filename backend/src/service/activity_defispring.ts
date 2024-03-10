@@ -216,6 +216,8 @@ export class ActivityDefispringService {
           await this.repoActivityDefispring.update(item.id, { rewards })
         })
       )
+
+      lastId = list[list.length - 1].id
     }
   }
 
