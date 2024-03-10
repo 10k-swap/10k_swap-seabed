@@ -175,4 +175,15 @@ export class StarknetService {
       )
     }
   }
+
+  getBlockInfoEventsLength(blockInfo: GetBlockResponse) {
+    let eventsLength = 0
+    if (!blockInfo.transaction_receipts) return eventsLength
+
+    for (const item of blockInfo.transaction_receipts) {
+      eventsLength += item.events?.length || 0
+    }
+
+    return eventsLength
+  }
 }

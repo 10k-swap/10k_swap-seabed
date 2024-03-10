@@ -28,13 +28,17 @@ export default function (router: KoaRouter<DefaultState, Context>) {
       class {
         from_block: number
         to_block?: number
+        updateSnBlock?: number
       },
       request.body
     )
-    console.warn('params:', params)
 
     // Enter background execution
-    new PairEventService().completion(params.from_block, params.to_block)
+    new PairEventService().completion(
+      params.from_block,
+      params.to_block,
+      params.updateSnBlock == 1
+    )
 
     restful.json({ status: 'Received' })
   })

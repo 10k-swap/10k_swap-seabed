@@ -7,6 +7,7 @@ import { Core } from '../util/core'
 import { accessLogger } from '../util/logger'
 import { PoolService } from './pool'
 import { StarknetService } from './starknet'
+import PromisePool from '@supercharge/promise-pool'
 
 const keyNames = {
   [hash.getSelectorFromName('Approval')]: 'Approval',
@@ -21,11 +22,13 @@ export class PairEventService {
   public static completionStatus: {
     fromBlock: number
     toBlock?: number
+    updateSnBlock: boolean
     currentBlock: number
-    status: 'Received' | 'Pending' | 'Done'
+    status: 'Received' | 'Pending' | 'Done' | 'Failed'
   } = {
     fromBlock: 0,
     toBlock: undefined,
+    updateSnBlock: false,
     currentBlock: 0,
     status: 'Done',
   }
@@ -61,17 +64,23 @@ export class PairEventService {
     }
   }
 
-  async completion(fromBlock: number, toBlock?: number) {
-    if (PairEventService.completionStatus.status !== 'Done') {
+  async completion(fromBlock: number, toBlock?: number, updateSnBlock = false) {
+    if (
+      PairEventService.completionStatus.status === 'Received' ||
+      PairEventService.completionStatus.status === 'Pending'
+    ) {
       accessLogger.warn(
         `Completion pair event doing: fromBlock: ${PairEventService.completionStatus.fromBlock}, toBlock: ${PairEventService.completionStatus.toBlock}, currentBlock: ${PairEventService.completionStatus.currentBlock}`
       )
       return
     }
 
+    const starknetService = new StarknetService()
+
     PairEventService.completionStatus = {
       fromBlock,
       toBlock,
+      updateSnBlock,
       currentBlock: fromBlock,
       status: 'Pending',
     }
@@ -83,6 +92,18 @@ export class PairEventService {
       PairEventService.completionStatus.status = 'Done'
     }
 
+    const failed = (e: Error) => {
+      accessLogger.info(
+        `Completion pair event failed, fromBlock: ${fromBlock} - currentBlock: ${PairEventService.completionStatus.currentBlock}, error: ${e.message}`
+      )
+      PairEventService.completionStatus.status = 'Failed'
+    }
+
+    const lastSNBlock = await this.repoSnBlock.findOne({
+      select: ['block_number'],
+      order: { block_number: 'DESC' },
+    })
+
     while (true) {
       if (
         toBlock !== undefined &&
@@ -92,16 +113,60 @@ export class PairEventService {
         break
       }
 
+      const take = 200
+      const start = PairEventService.completionStatus.currentBlock
+      const end =
+        PairEventService.completionStatus.toBlock ||
+        lastSNBlock?.block_number ||
+        0
+
       const snBlocks = await this.repoSnBlock.find({
-        take: 2000,
+        take: take,
         order: { block_number: 'ASC' },
         where: {
-          block_number: Between(
-            PairEventService.completionStatus.currentBlock,
-            PairEventService.completionStatus.toBlock || Number.MAX_SAFE_INTEGER
-          ),
+          block_number: Between(start, end),
         },
       })
+
+      if (updateSnBlock) {
+        const blockNumbers = new Array(Math.min(end - start + 1, take))
+          .fill(undefined)
+          .map((_, i) => start + i)
+
+        await PromisePool.withConcurrency(50)
+          .for(blockNumbers)
+          .handleError((e) => {
+            failed(e)
+            throw e
+          })
+          .process(async (blockNumber) => {
+            const blockInfo = await starknetService.getStarknetBlockInfo(
+              blockNumber
+            )
+
+            const targetSnBlock = snBlocks.find(
+              (item) => item.block_number == blockInfo.block_number
+            )
+
+            // It needs to be updated if the new events are longer than the old ones.
+            if (
+              targetSnBlock &&
+              starknetService.getBlockInfoEventsLength(blockInfo) >
+                starknetService.getBlockInfoEventsLength(
+                  targetSnBlock.block_data
+                )
+            ) {
+              console.warn('dddddddd:', new Date())
+
+              await this.repoSnBlock.update(
+                { block_number: blockNumber },
+                { block_data: blockInfo }
+              )
+
+              targetSnBlock.block_data = blockInfo
+            }
+          })
+      }
 
       if (snBlocks.length == 0) {
         done()
@@ -119,7 +184,7 @@ export class PairEventService {
 
         // Event length 1001 is generally invalid data. A bug of blast rpc
         if (events.length == 1001) {
-          blockInfo = await new StarknetService().getStarknetBlockInfo(
+          blockInfo = await starknetService.getStarknetBlockInfo(
             snBlock.block_number
           )
 
