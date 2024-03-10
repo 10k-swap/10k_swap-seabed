@@ -29,6 +29,7 @@ export class RpcsService {
     })
   }
 
+  // Warning bug: getEvents only response 1001 event where over 1000 event
   alchemyRpcProvider() {
     if (rpcConfig.alchemyEndpoints.length <= 0) {
       throw new Error('Miss alchemy rpc endpoint.')

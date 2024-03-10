@@ -1,4 +1,4 @@
-import { GetBlockResponse, RPC } from 'starknet'
+import { GetBlockResponse, RPC, RpcProvider } from 'starknet'
 import { SnBlock } from '../model/sn_block'
 import { get10kStartBlockByEnv, getRpcProviderByEnv, sleep } from '../util'
 import { Core } from '../util/core'
@@ -122,7 +122,8 @@ export class StarknetService {
   async getStarknetBlockEvents(
     blockNumber: number,
     continuationToken: string | undefined = undefined,
-    tryCount = 0
+    tryCount = 0,
+    rpcProvider?: RpcProvider
   ): Promise<RPC.SPEC.EVENTS_CHUNK> {
     try {
       return await new Promise(async (resolve, reject) => {
@@ -130,7 +131,8 @@ export class StarknetService {
           reject(new Error('Timeout Error'))
         }, 30000)
 
-        const rpcProvider = new RpcsService().alchemyRpcProvider()
+        if (rpcProvider === undefined)
+          rpcProvider = RpcsService.createRandomRpcProvider()
 
         try {
           const chunkSize = 1000
@@ -171,7 +173,8 @@ export class StarknetService {
       return await this.getStarknetBlockEvents(
         blockNumber,
         continuationToken,
-        tryCount
+        tryCount,
+        new RpcsService().defaultRpcProvider()
       )
     }
   }
