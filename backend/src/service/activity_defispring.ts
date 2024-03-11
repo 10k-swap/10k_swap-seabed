@@ -81,18 +81,15 @@ export class ActivityDefispringService {
       }
 
       const newLastEventTime = new Date(
-        Math.min(activityEndTime, lastEventTime.getTime() + 64_800_000)
-      ) // 18 hours
+        Math.min(activityEndTime, lastEventTime.getTime() + 86_400_000)
+      ) // 24 hours
       const transfers = await this.repoPairTransfer.find({
         where: {
-          event_time: Between(
-            new Date(lastEventTime.getTime() + 1),
-            newLastEventTime
-          ),
+          event_time: Between(lastEventTime, newLastEventTime),
         },
         order: { event_time: 'ASC' },
       })
-      lastEventTime = newLastEventTime
+      lastEventTime = new Date(newLastEventTime.getTime() + 1)
 
       for (const item of transfers) {
         if (
