@@ -64,8 +64,8 @@ export class ActivityDefispringService {
   ) {}
 
   async startStatistics() {
-    // const exists = await Core.redis.exists(this.accountHKey)
-    // if (exists) return
+    const exists = await Core.redis.exists(this.accountHKey)
+    if (exists) return
 
     await Core.redis.del(this.accountHKey)
 
@@ -189,15 +189,15 @@ export class ActivityDefispringService {
 
     const queryBuilder = this.repoActivityDefispring.createQueryBuilder()
     queryBuilder.select(
-      `CONCAT(ROUND(SUM(CAST(balance_of as numeric)), 0), '') as sum_balance_of`
+      `CONCAT(ROUND(SUM(CAST(partition as numeric)), 0), '') as sum_partition`
     )
     queryBuilder.where('pair_address = :pairAddress AND day = :day', {
       pairAddress,
       day,
     })
 
-    const sumBalanceOf = (await queryBuilder.getRawMany())[0]?.sum_balance_of
-    if (!sumBalanceOf) return
+    const sumPartition = (await queryBuilder.getRawMany())[0]?.sum_partition
+    if (!sumPartition) return
 
     let lastId = 0
     while (true) {
@@ -207,28 +207,43 @@ export class ActivityDefispringService {
           pair_address: pairAddress,
           day,
           rewards: IsNull(),
-          balance_of: MoreThan(0),
         },
-        take: 2000,
+        take: 500,
         order: { id: 'ASC' },
       })
 
       if (list.length <= 0) break
 
-      await Promise.all(
-        list.map(async (item) => {
-          if (BigNumber.from(item.balance_of).lte(0)) {
-            return
-          }
+      const updateList: DeepPartial<ActivityDefispring>[] = []
+      for (const item of list) {
+        if (BigNumber.from(item.partition).lte(0)) {
+          continue
+        }
 
-          const rewards =
-            BigNumber.from(allocationWei)
-              .mul(item.balance_of)
-              .div(sumBalanceOf) + ''
+        const rewards =
+          BigNumber.from(allocationWei).mul(item.partition).div(sumPartition) +
+          ''
 
-          await this.repoActivityDefispring.update(item.id, { rewards })
-        })
-      )
+        updateList.push({ id: item.id, rewards })
+      }
+
+      await this.repoActivityDefispring.save(updateList)
+
+      // await Promise.all(
+      //   list.map(async (item) => {
+
+      //     if (BigNumber.from(item.partition).lte(0)) {
+      //       return
+      //     }
+
+      //     const rewards =
+      //     BigNumber.from(allocationWei)
+      //       .mul(item.partition)
+      //       .div(sumPartition) + ''
+
+      //     await this.repoActivityDefispring.update(item.id, { rewards })
+      //   })
+      // )
 
       lastId = list[list.length - 1].id
     }
