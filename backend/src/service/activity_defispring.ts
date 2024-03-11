@@ -3,11 +3,11 @@ import dayjs from 'dayjs'
 import { BigNumber, utils } from 'ethers'
 import { BigNumberish } from 'starknet'
 import { Between, DeepPartial, IsNull, MoreThan } from 'typeorm'
+import { STRK_TOKEN_INFO } from '../constants'
 import { ActivityDefispring } from '../model/activity_defispring'
 import { PairTransfer } from '../model/pair_transfer'
 import { equalBN } from '../util'
 import { Core } from '../util/core'
-import { STRK_TOKEN_INFO } from '../constants'
 import { errorLogger } from '../util/logger'
 
 type AccountHValue = Record<
@@ -63,27 +63,39 @@ export class ActivityDefispringService {
   ) {}
 
   async startStatistics() {
-    const exists = await Core.redis.exists(this.accountHKey)
-    if (exists) return
+    // const exists = await Core.redis.exists(this.accountHKey)
+    // if (exists) return
 
     await Core.redis.del(this.accountHKey)
 
-    let lastId = 0
+    let lastEventTime = (await this.repoPairTransfer.findOne({
+      select: ['event_time'],
+      order: { event_time: 'ASC' },
+    }))!.event_time
+
     let lastPairTransfer: PairTransfer | undefined = undefined
 
     while (true) {
-      const transfers = await this.repoPairTransfer.find({
-        where: { id: MoreThan(lastId) },
-        order: { event_time: 'ASC', id: 'ASC' },
-        take: 20000,
-      })
+      if (lastEventTime.getTime() >= activityEndTime) {
+        return
+      }
 
-      if (transfers.length <= 0) break
+      const newLastEventTime = new Date(
+        Math.min(activityEndTime, lastEventTime.getTime() + 43_200_000)
+      ) // 16 hours
+      const transfers = await this.repoPairTransfer.find({
+        where: {
+          event_time: Between(
+            new Date(lastEventTime.getTime() + 1),
+            newLastEventTime
+          ),
+        },
+        order: { event_time: 'ASC' },
+      })
+      lastEventTime = newLastEventTime
 
       for (const item of transfers) {
-        if (new Date(item.event_time).getTime() > activityEndTime) {
-          break
-        }
+        console.warn('item:', item)
 
         if (
           this.activityCurrentTime >
@@ -138,8 +150,6 @@ export class ActivityDefispringService {
 
         lastPairTransfer = item
       }
-
-      lastId = transfers[transfers.length - 1].id
     }
   }
 
