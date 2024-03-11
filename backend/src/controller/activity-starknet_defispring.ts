@@ -1,6 +1,6 @@
 import { plainToInstance } from 'class-transformer'
 import { BigNumber } from 'ethers'
-import { formatEther } from 'ethers/lib/utils'
+import { formatUnits } from 'ethers/lib/utils'
 import { Context, DefaultState } from 'koa'
 import KoaRouter from 'koa-router'
 import { addAddressPadding } from 'starknet'
@@ -9,6 +9,7 @@ import { ActivityDefispringService } from '../service/activity_defispring'
 import { OKXService } from '../service/okx'
 import { PairTransactionService } from '../service/pair_transaction'
 import { PoolService } from '../service/pool'
+import { STRK_TOKEN_INFO } from '../constants'
 
 async function intractIOCall(
   ctx: Context,
@@ -425,11 +426,14 @@ export default function (router: KoaRouter<DefaultState, Context>) {
         totalRewards = totalRewards.add(rewardsWei)
         return {
           pair_address: item.pair_address,
-          rewards: formatEther(rewardsWei),
+          rewards: formatUnits(rewardsWei, STRK_TOKEN_INFO.decimals),
         }
       })
 
-      restful.json({ list, totalRewards: formatEther(totalRewards) })
+      restful.json({
+        list,
+        totalRewards: formatUnits(totalRewards, STRK_TOKEN_INFO.decimals),
+      })
     }
   )
 }

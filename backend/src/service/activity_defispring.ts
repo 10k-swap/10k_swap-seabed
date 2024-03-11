@@ -1,12 +1,14 @@
 import axios from 'axios'
 import dayjs from 'dayjs'
-import { BigNumber, FixedNumber, utils } from 'ethers'
+import { BigNumber, utils } from 'ethers'
 import { BigNumberish } from 'starknet'
-import { Between, IsNull, MoreThan } from 'typeorm'
+import { Between, DeepPartial, IsNull, MoreThan } from 'typeorm'
 import { ActivityDefispring } from '../model/activity_defispring'
 import { PairTransfer } from '../model/pair_transfer'
 import { equalBN } from '../util'
 import { Core } from '../util/core'
+import { STRK_TOKEN_INFO } from '../constants'
+import { errorLogger } from '../util/logger'
 
 type AccountHValue = Record<
   string,
@@ -168,7 +170,10 @@ export class ActivityDefispringService {
     day: string,
     allocation: number
   ) {
-    const allocationWei = utils.parseEther(allocation + '')
+    const allocationWei = utils.parseUnits(
+      allocation + '',
+      STRK_TOKEN_INFO.decimals
+    )
 
     const upOne = await this.repoActivityDefispring.findOne({
       select: ['id'],
@@ -269,6 +274,8 @@ export class ActivityDefispringService {
 
       await Promise.all(
         accounts.map(async (item) => {
+          const activityDefisprings: DeepPartial<ActivityDefispring>[] = []
+
           for (const pairAddress in item[1]) {
             // const one = await this.repoActivityDefispring.findOne(
             //   { account_address: item[0], pair_address: pairAddress, day },
@@ -282,7 +289,17 @@ export class ActivityDefispringService {
             //     partition: item[1][pairAddress].partition + '',
             //   })
             // } else {
-            await this.repoActivityDefispring.insert({
+            // await this.repoActivityDefispring.save({
+            //   pair_address: pairAddress,
+            //   account_address: item[0],
+            //   balance_of: item[1][pairAddress].balanceOf + '',
+            //   partition: item[1][pairAddress].partition + '',
+            //   day,
+            //   rewards: null,
+            // })
+            // }
+
+            activityDefisprings.push({
               pair_address: pairAddress,
               account_address: item[0],
               balance_of: item[1][pairAddress].balanceOf + '',
@@ -290,11 +307,19 @@ export class ActivityDefispringService {
               day,
               rewards: null,
             })
-            // }
 
+            if (BigNumber.from(item[1][pairAddress].balanceOf + '').lt(0)) {
+              errorLogger.info(
+                `balanceOf less than zero, account: ${item[0]}, pair: ${pairAddress}, day: ${day}`
+              )
+            }
+
+            // Update new partition
             item[1][pairAddress].partition =
               BigNumber.from(item[1][pairAddress].balanceOf).mul(86400) + ''
           }
+
+          // await this.repoActivityDefispring.save(activityDefisprings)
 
           await Core.redis.hset(
             this.accountHKey,
