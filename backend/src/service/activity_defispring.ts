@@ -304,19 +304,18 @@ export class ActivityDefispringService {
             // })
             // }
 
-            activityDefisprings.push({
-              pair_address: pairAddress,
-              account_address: item[0],
-              balance_of: item[1][pairAddress].balanceOf + '',
-              partition: item[1][pairAddress].partition + '',
-              day,
-              rewards: null,
-            })
-
-            if (BigNumber.from(item[1][pairAddress].balanceOf + '').lt(0)) {
-              errorLogger.info(
-                `balanceOf less than zero, account: ${item[0]}, pair: ${pairAddress}, day: ${day}`
-              )
+            if (
+              BigNumber.from(item[1][pairAddress].balanceOf).gt(0) ||
+              BigNumber.from(item[1][pairAddress].partition).gt(0)
+            ) {
+              activityDefisprings.push({
+                pair_address: pairAddress,
+                account_address: item[0],
+                balance_of: item[1][pairAddress].balanceOf + '',
+                partition: item[1][pairAddress].partition + '',
+                day,
+                rewards: null,
+              })
             }
 
             // Update new partition
@@ -324,7 +323,8 @@ export class ActivityDefispringService {
               BigNumber.from(item[1][pairAddress].balanceOf).mul(86400) + ''
           }
 
-          // await this.repoActivityDefispring.save(activityDefisprings)
+          if (activityDefisprings.length > 0)
+            await this.repoActivityDefispring.save(activityDefisprings)
 
           await Core.redis.hset(
             this.accountHKey,
