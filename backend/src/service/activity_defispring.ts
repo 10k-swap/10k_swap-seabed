@@ -214,36 +214,20 @@ export class ActivityDefispringService {
 
       if (list.length <= 0) break
 
-      const updateList: DeepPartial<ActivityDefispring>[] = []
-      for (const item of list) {
-        if (BigNumber.from(item.partition).lte(0)) {
-          continue
-        }
+      await Promise.all(
+        list.map(async (item) => {
+          if (BigNumber.from(item.partition).lte(0)) {
+            return
+          }
 
-        const rewards =
-          BigNumber.from(allocationWei).mul(item.partition).div(sumPartition) +
-          ''
+          const rewards =
+            BigNumber.from(allocationWei)
+              .mul(item.partition)
+              .div(sumPartition) + ''
 
-        updateList.push({ id: item.id, rewards })
-      }
-
-      await this.repoActivityDefispring.save(updateList)
-
-      // await Promise.all(
-      //   list.map(async (item) => {
-
-      //     if (BigNumber.from(item.partition).lte(0)) {
-      //       return
-      //     }
-
-      //     const rewards =
-      //     BigNumber.from(allocationWei)
-      //       .mul(item.partition)
-      //       .div(sumPartition) + ''
-
-      //     await this.repoActivityDefispring.update(item.id, { rewards })
-      //   })
-      // )
+          await this.repoActivityDefispring.update(item.id, { rewards })
+        })
+      )
 
       lastId = list[list.length - 1].id
     }
