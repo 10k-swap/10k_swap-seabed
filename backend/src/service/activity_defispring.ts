@@ -81,8 +81,8 @@ export class ActivityDefispringService {
       }
 
       const newLastEventTime = new Date(
-        Math.min(activityEndTime, lastEventTime.getTime() + 43_200_000)
-      ) // 16 hours
+        Math.min(activityEndTime, lastEventTime.getTime() + 64_800_000)
+      ) // 18 hours
       const transfers = await this.repoPairTransfer.find({
         where: {
           event_time: Between(
@@ -95,8 +95,6 @@ export class ActivityDefispringService {
       lastEventTime = newLastEventTime
 
       for (const item of transfers) {
-        console.warn('item:', item)
-
         if (
           this.activityCurrentTime >
             new Date(lastPairTransfer?.event_time || 0).getTime() &&
