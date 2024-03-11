@@ -21,6 +21,7 @@ type AccountHValue = Record<
 
 const activityStartTime = 1708560000000 // Start: 2024-02-22 00:00:00(UTC-0)
 const activityEndTime = 1715990400000 // End: 2024-05-18 00:00:00(UTC-0)
+const dayMs = 86400000
 
 // const activityStartTime = 1664582400000 // Start: 2022-10-01 00:00:00(UTC-0) //TODO
 // const activityEndTime = 1664582400000 + 86400 * 20 * 1000 // End: 2022-10-20 00:00:00(UTC-0) //TODO
@@ -99,7 +100,7 @@ export class ActivityDefispringService {
         ) {
           await this.gatherAccounts()
 
-          this.activityCurrentTime = this.activityCurrentTime + 86400000
+          this.activityCurrentTime = this.activityCurrentTime + dayMs
         }
 
         // Filter
@@ -260,7 +261,7 @@ export class ActivityDefispringService {
   }
 
   private async gatherAccounts() {
-    const day = dayjs(this.activityCurrentTime).format('YYYY-MM-DD')
+    const yesterdayTime = this.activityCurrentTime - 1
 
     let cursor = '0'
     while (true) {
@@ -313,7 +314,7 @@ export class ActivityDefispringService {
                 account_address: item[0],
                 balance_of: item[1][pairAddress].balanceOf + '',
                 partition: item[1][pairAddress].partition + '',
-                day,
+                day: dayjs(yesterdayTime).format('YYYY-MM-DD'),
                 rewards: null,
               })
             }
@@ -323,7 +324,10 @@ export class ActivityDefispringService {
               BigNumber.from(item[1][pairAddress].balanceOf).mul(86400) + ''
           }
 
-          if (activityDefisprings.length > 0)
+          if (
+            yesterdayTime >= activityStartTime &&
+            activityDefisprings.length > 0
+          )
             await this.repoActivityDefispring.save(activityDefisprings)
 
           await Core.redis.hset(
