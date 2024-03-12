@@ -89,6 +89,12 @@ export class StarknetService {
             continuationToken = result.continuation_token
           }
 
+          // Log when events.length < transactions.length
+          if (events.length < r.transactions.length)
+            accessLogger.warn(
+              `Block events length[${events.length}] less than transactions length[${r.transactions.length}]. Block number: ${blockNumber}`
+            )
+
           const transaction_receipts: any[] = []
           r.transactions.forEach((hash, index) => {
             transaction_receipts.push({
@@ -174,7 +180,7 @@ export class StarknetService {
         blockNumber,
         continuationToken,
         tryCount,
-        new RpcsService().defaultRpcProvider()
+        new RpcsService().nethermindRpcProvider()
       )
     }
   }
