@@ -4,9 +4,10 @@ import { In } from 'typeorm'
 import { faucetConfig } from '../config'
 import erc20 from '../config/abis/erc20.json'
 import { TwitterCrawl } from '../model/twitter_crawl'
-import { getRpcProviderByEnv, isAddress, sleep } from '../util'
+import { isAddress, sleep } from '../util'
 import { Core } from '../util/core'
 import { accessLogger, errorLogger } from '../util/logger'
+import { RpcsService } from './rpcs'
 
 export class FaucetService {
   private static accountWorking: { [key: string]: boolean } = {}
@@ -157,7 +158,7 @@ export class FaucetService {
       // TODO: test
       accounts.push(
         new Account(
-          getRpcProviderByEnv(),
+          new RpcsService().alchemyRpcProvider(),
           address.toLowerCase(),
           num.toHex(privateKey)
         )

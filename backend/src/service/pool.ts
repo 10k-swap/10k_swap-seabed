@@ -7,12 +7,7 @@ import {
   uint256,
 } from 'starknet'
 import { contractConfig } from '../config'
-import {
-  bigNumberishToUtf8,
-  getRpcProviderByEnv,
-  isDevelopEnv,
-  sleep,
-} from '../util'
+import { bigNumberishToUtf8, isDevelopEnv, sleep } from '../util'
 import { Core } from '../util/core'
 import { accessLogger, errorLogger } from '../util/logger'
 import { AnalyticsService } from './analytics'
@@ -80,7 +75,7 @@ export class PoolService {
     const contract = new Contract(
       contractConfig.abis.erc20 as any,
       address,
-      getRpcProviderByEnv()
+      new RpcsService().alchemyRpcProvider()
     )
 
     const [nameResp, symbolResp, decimalsResp] = await Promise.all([
@@ -100,7 +95,7 @@ export class PoolService {
     const contract = new Contract(
       contractConfig.abis.l0kPair as any,
       address,
-      getRpcProviderByEnv()
+      new RpcsService().alchemyRpcProvider()
     )
 
     const decimals = 18 // 10kPair token's decimals always is 18

@@ -122,10 +122,6 @@ export function getProviderByEnv() {
   })
 }
 
-export function getRpcProviderByEnv() {
-  return new RpcsService().defaultRpcProvider()
-}
-
 export function isRpcTooManyRequests(err: Error) {
   return /(Too Many Requests)/gi.test(err.message)
 }
