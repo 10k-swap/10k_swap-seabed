@@ -1,6 +1,6 @@
 import { GetBlockResponse, RPC, RpcProvider } from 'starknet'
 import { SnBlock } from '../model/sn_block'
-import { get10kStartBlockByEnv, getRpcProviderByEnv, sleep } from '../util'
+import { get10kStartBlockByEnv, sleep } from '../util'
 import { Core } from '../util/core'
 import { accessLogger } from '../util/logger'
 import { RpcsService } from './rpcs'
@@ -12,7 +12,7 @@ export class StarknetService {
 
   async updateLatestBlockNumber() {
     const { block_number } =
-      await getRpcProviderByEnv().getBlockLatestAccepted()
+      await RpcsService.createRandomRpcProvider().getBlockLatestAccepted()
 
     accessLogger.info(`Block_number: ${block_number}`)
 
