@@ -63,7 +63,7 @@ export class StarknetService {
           reject(new Error('Timeout Error'))
         }, 100000)
 
-        const rpcProvider = new RpcsService().alchemyRpcProvider()
+        const rpcProvider = RpcsService.createRandomRpcProvider()
 
         try {
           const r = await rpcProvider.getBlockWithTxHashes(blockNumber)
@@ -180,7 +180,7 @@ export class StarknetService {
         blockNumber,
         continuationToken,
         tryCount,
-        new RpcsService().nethermindRpcProvider()
+        new RpcsService().defaultRpcProvider()
       )
     }
   }
