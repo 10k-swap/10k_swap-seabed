@@ -8,7 +8,7 @@ import { ActivityDefispring } from '../model/activity_defispring'
 import { PairTransfer } from '../model/pair_transfer'
 import { equalBN } from '../util'
 import { Core } from '../util/core'
-import { errorLogger } from '../util/logger'
+import { accessLogger } from '../util/logger'
 
 type AccountHValue = Record<
   string,
@@ -67,7 +67,7 @@ export class ActivityDefispringService {
     const exists = await Core.redis.exists(this.accountHKey)
     if (exists) return
 
-    await Core.redis.del(this.accountHKey)
+    await this.repoActivityDefispring.clear() // TRUNCATE activity_defispring;
 
     let lastEventTime = (await this.repoPairTransfer.findOne({
       select: ['event_time'],
@@ -90,6 +90,11 @@ export class ActivityDefispringService {
         },
         order: { event_time: 'ASC' },
       })
+      accessLogger.info(
+        `Statistics lastEventTime:${lastEventTime + ''} - newLastEventTime: ${
+          newLastEventTime + ''
+        }`
+      )
       lastEventTime = new Date(newLastEventTime.getTime() + 1)
 
       for (const item of transfers) {
@@ -282,28 +287,6 @@ export class ActivityDefispringService {
           const activityDefisprings: DeepPartial<ActivityDefispring>[] = []
 
           for (const pairAddress in item[1]) {
-            // const one = await this.repoActivityDefispring.findOne(
-            //   { account_address: item[0], pair_address: pairAddress, day },
-            //   {
-            //     select: ['id'],
-            //   }
-            // )
-            // if (one) {
-            //   await this.repoActivityDefispring.update(one.id, {
-            //     balance_of: item[1][pairAddress].balanceOf + '',
-            //     partition: item[1][pairAddress].partition + '',
-            //   })
-            // } else {
-            // await this.repoActivityDefispring.save({
-            //   pair_address: pairAddress,
-            //   account_address: item[0],
-            //   balance_of: item[1][pairAddress].balanceOf + '',
-            //   partition: item[1][pairAddress].partition + '',
-            //   day,
-            //   rewards: null,
-            // })
-            // }
-
             if (
               BigNumber.from(item[1][pairAddress].balanceOf).gt(0) ||
               BigNumber.from(item[1][pairAddress].partition).gt(0)

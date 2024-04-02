@@ -2,7 +2,7 @@ import { GetBlockResponse, RPC, RpcProvider } from 'starknet'
 import { SnBlock } from '../model/sn_block'
 import { get10kStartBlockByEnv, sleep } from '../util'
 import { Core } from '../util/core'
-import { accessLogger } from '../util/logger'
+import { accessLogger, errorLogger } from '../util/logger'
 import { RpcsService } from './rpcs'
 
 export class StarknetService {
@@ -113,9 +113,14 @@ export class StarknetService {
         clearTimeout(timeoutId)
       })
     } catch (err) {
+      errorLogger.error(
+        `Failed getStarknetBlockInfo[${blockNumber}]:`,
+        err.message
+      )
+
       tryCount += 1
 
-      if (tryCount > 30) throw err
+      // if (tryCount > 30) throw err // Never quit
 
       // Exponential Avoidance
       const ms = parseInt(tryCount * 200 + '')
@@ -169,8 +174,13 @@ export class StarknetService {
         clearTimeout(timeoutId)
       })
     } catch (err) {
+      errorLogger.error(
+        `Failed getStarknetBlockEvents[${blockNumber}]:`,
+        err.message
+      )
+
       tryCount += 1
-      if (tryCount > 20) throw err
+      // if (tryCount > 20) throw err // Never quit
 
       // Exponential Avoidance
       const ms = parseInt(tryCount * 200 + '')

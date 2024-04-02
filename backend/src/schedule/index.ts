@@ -42,7 +42,7 @@ export const startMasterJobs = async () => {
 
   jobCacheTVLsByDayAndVolumesByDay()
 
-  // jobDefispringStatistics()
+  jobDefispringStatistics()
   jobDefispringCacheQaSTRKGrant()
   jobDefispringStatisticsSTRKRewards()
 }
