@@ -237,7 +237,7 @@ export function jobDefispringCacheQaSTRKGrant() {
   }
 
   new MJobPessimism(
-    '*/30 * * * * *',
+    '* */10 * * * *',
     callback,
     jobDefispringCacheQaSTRKGrant.name
   ).schedule(true)

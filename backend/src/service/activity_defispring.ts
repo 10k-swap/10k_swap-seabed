@@ -91,9 +91,9 @@ export class ActivityDefispringService {
         order: { event_time: 'ASC' },
       })
       accessLogger.info(
-        `Statistics lastEventTime:${lastEventTime + ''} - newLastEventTime: ${
-          newLastEventTime + ''
-        }`
+        `Statistics defispring lastEventTime:${
+          lastEventTime + ''
+        } - newLastEventTime: ${newLastEventTime + ''}`
       )
       lastEventTime = new Date(newLastEventTime.getTime() + 1)
 
@@ -186,6 +186,7 @@ export class ActivityDefispringService {
       STRK_TOKEN_INFO.decimals
     )
 
+    // There must be data greater than that of the current day, which means that the data of the current day is complete.
     const upOne = await this.repoActivityDefispring.findOne({
       select: ['id'],
       where: { pair_address: pairAddress, day: MoreThan(day) },
