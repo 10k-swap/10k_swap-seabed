@@ -20,7 +20,7 @@ type AccountHValue = Record<
 >
 
 const activityStartTime = 1708560000000 // Start: 2024-02-22 00:00:00(UTC-0)
-const activityEndTime = 1737158400000 // End: 2024-05-18 00:00:00(UTC-0)
+const activityEndTime = 1737158400000 // End: 2025-01-18 00:00:00(UTC-0)
 const dayMs = 86400000
 
 // const activityStartTime = 1664582400000 // Start: 2022-10-01 00:00:00(UTC-0) //TODO
