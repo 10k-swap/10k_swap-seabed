@@ -75,7 +75,7 @@ export class PoolService {
     const contract = new Contract(
       contractConfig.abis.erc20 as any,
       address,
-      new RpcsService().alchemyRpcProvider()
+      RpcsService.createRandomRpcProvider()
     )
 
     const [nameResp, symbolResp, decimalsResp] = await Promise.all([
@@ -95,7 +95,7 @@ export class PoolService {
     const contract = new Contract(
       contractConfig.abis.l0kPair as any,
       address,
-      new RpcsService().alchemyRpcProvider()
+      RpcsService.createRandomRpcProvider()
     )
 
     const decimals = 18 // 10kPair token's decimals always is 18
@@ -225,7 +225,7 @@ export class PoolService {
   }
 
   async getPairCreatedEvents() {
-    const rpcProvider = new RpcsService().alchemyRpcProvider()
+    const rpcProvider = RpcsService.createRandomRpcProvider()
 
     let events: RPC.SPEC.EMITTED_EVENT[] = []
     let continuation_token: string | undefined = undefined
