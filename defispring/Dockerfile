@@ -13,6 +13,4 @@ COPY --from=builder /build/target/release/api_run .
 
 EXPOSE 8080
 
-VOLUME /app/raw_input
-
 CMD ["./api_run"]
