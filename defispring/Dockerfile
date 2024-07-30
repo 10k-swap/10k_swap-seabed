@@ -9,7 +9,7 @@ FROM debian:buster-slim
 WORKDIR /app
 
 RUN apt-get update && apt install -y libpq-dev openssl ca-certificates
-COPY --from=builder /build/target/release/api_run .
+COPY --from=builder /build .
 
 EXPOSE 8080
 
