@@ -21,8 +21,8 @@ fn valid_single_file() {
     remove_zips(&path);
 
     assert!(files.len() == 1);
-    assert!(files[0].accumulated_total_amount == 700);
-    assert!(files[0].round_total_amount == 700);
+    assert!(files[0].accumulated_total_amount == 340282366920938463463374607431768211 + 700);
+    assert!(files[0].round_total_amount == 340282366920938463463374607431768211 + 700);
     assert!(files[0].round == 1);
 }
 

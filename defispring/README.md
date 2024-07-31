@@ -24,7 +24,9 @@ As the whole tree is built on startup and saved in memory, startup can take tens
 
 ## Running the project locally for testing purposes
 
-You can launch the API locally by first installing Rust and then running `cargo run`. The API will be available at http://127.0.0.1:8080 .
+You can launch the API locally by first installing Rust and then running `cargo run`. The API will be available at http://127.0.0.1:8080/ENDPOINT .
+
+You can check if it's running at http://127.0.0.1:8080/swagger-ui/
 
 ## Endpoints
 
@@ -32,7 +34,7 @@ The endpoints are documented with OpenAPI documentation. A Swagger UI is generat
 
 The Swagger UI can be used also to test the endpoints.
 
-An example deployment, with Swagger UI, can be found at TODO.
+An example deployment, with Swagger UI, can be found at http://35.195.237.203:8080/swagger-ui/ .
 
 ## Concepts
 

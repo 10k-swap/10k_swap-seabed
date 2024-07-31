@@ -1,6 +1,7 @@
 use regex::Regex;
 use serde_json::from_slice;
-use std::{collections::HashMap, fs::File, io::Read, path::Path};
+use starknet_crypto::FieldElement;
+use std::{collections::HashMap, fs::File, io::Read, path::Path, str::FromStr};
 
 use super::{
     data_storage::get_all_data,
@@ -35,11 +36,13 @@ pub fn get_raw_allocation_amount(round: Option<u8>, address: &String) -> Result<
         Err(value) => return Err(value),
     };
 
+    let field: FieldElement = FieldElement::from_str(address).expect("Invalid address");
+
     let drop = match relevant_data
         .tree
         .allocations
         .iter()
-        .find(|a| a.address.to_lowercase() == address.to_lowercase())
+        .find(|a| a.address == field)
     {
         Some(v) => v,
         None => return Ok(0_u128),
@@ -55,8 +58,8 @@ pub fn get_raw_root(round: Option<u8>) -> Result<RootQueryResult, String> {
     };
     let res = RootQueryResult {
         root: felt_to_b16(&relevant_data.tree.root.value),
-        accumulated_total_amount: relevant_data.accumulated_total_amount,
-        round_total_amount: relevant_data.round_total_amount,
+        accumulated_total_amount: relevant_data.accumulated_total_amount.to_string(),
+        round_total_amount: relevant_data.round_total_amount.to_string(),
     };
     Ok(res)
 }
@@ -104,7 +107,7 @@ pub fn transform_allocations_to_cumulative_rounds(
         // The cumulative map has all addresses that have any allocation in this round and all previous rounds
         for key in cum_map.cumulative_amounts.keys() {
             let address_cumulative = CumulativeAllocation {
-                address: key.to_string().to_lowercase(),
+                address: *key,
                 cumulative_amount: cum_map.cumulative_amounts[key],
             };
             // If this round has this address add its amount to the round total amount
@@ -117,7 +120,7 @@ pub fn transform_allocations_to_cumulative_rounds(
 
         if curr_round_data.len() > 0 {
             // Sort because hashmap iterator returns keys in arbitrary order
-            curr_round_data.sort_by(|a, b| a.address.to_lowercase().cmp(&b.address.to_lowercase()));
+            curr_round_data.sort_by(|a, b| a.address.cmp(&b.address));
 
             let tree = MerkleTree::new(curr_round_data);
 
@@ -143,11 +146,11 @@ pub fn transform_allocations_to_cumulative_rounds(
 
 /// Converts JSON allocation data into cumulative map-per-round data
 pub fn map_cumulative_amounts(allocations: Vec<RoundAmounts>) -> Vec<RoundAmountMaps> {
-    let mut all_rounds_cums: HashMap<String, u128> = HashMap::new();
+    let mut all_rounds_cums: HashMap<FieldElement, u128> = HashMap::new();
     let mut round_maps: Vec<RoundAmountMaps> = Vec::new();
 
     for allocation in allocations.iter() {
-        let mut curr_round_amounts: HashMap<String, u128> = HashMap::new();
+        let mut curr_round_amounts: HashMap<FieldElement, u128> = HashMap::new();
 
         for data in allocation.amounts.iter() {
             let amount = match data.amount.parse::<u128>() {
@@ -155,13 +158,10 @@ pub fn map_cumulative_amounts(allocations: Vec<RoundAmounts>) -> Vec<RoundAmount
                 Err(_) => 0_u128, // If number is invalid assign 0
             };
 
-            *curr_round_amounts
-                .entry(data.address.to_lowercase().clone())
-                .or_insert_with(|| 0) += amount;
+            let field = FieldElement::from_str(&data.address).unwrap();
 
-            *all_rounds_cums
-                .entry(data.address.to_lowercase().clone())
-                .or_insert_with(|| 0) += amount;
+            *curr_round_amounts.entry(field).or_insert_with(|| 0) += amount;
+            *all_rounds_cums.entry(field).or_insert_with(|| 0) += amount;
         }
         let map = RoundAmountMaps {
             round: allocation.round,
@@ -236,12 +236,12 @@ pub fn retrieve_valid_files(filepath: String) -> Vec<FileNameInfo> {
 
 impl RoundTreeData {
     /// Retrieve allocated amount for an address in a specific round
-    pub fn address_amount(&self, address: &str) -> Result<u128, String> {
+    pub fn address_amount(&self, address: FieldElement) -> Result<u128, String> {
         let address_drop: Vec<CumulativeAllocation> = self
             .tree
             .allocations
             .iter()
-            .filter(|a| a.address.to_lowercase() == address.to_lowercase())
+            .filter(|a| a.address == address)
             .cloned()
             .collect();
 

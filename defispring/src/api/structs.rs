@@ -25,8 +25,8 @@ pub struct RoundAmounts {
 /// Temporary storage inside processing
 pub struct RoundAmountMaps {
     pub round: u8,
-    pub round_amounts: HashMap<String, u128>,
-    pub cumulative_amounts: HashMap<String, u128>,
+    pub round_amounts: HashMap<FieldElement, u128>,
+    pub cumulative_amounts: HashMap<FieldElement, u128>,
 }
 
 /// A Merkle tree with extra allocation data for easier access
@@ -51,9 +51,9 @@ pub struct RootQueryResult {
     /// The Merkle root for this round
     pub root: String,
     /// The accumulated amount of tokens to be distributed in a round. Includes amounts from all previous rounds
-    pub accumulated_total_amount: u128,
+    pub accumulated_total_amount: String,
     /// The total amount of tokens to be distributed in a round. Includes amounts only from one round
-    pub round_total_amount: u128,
+    pub round_total_amount: String,
 }
 
 /// A node in a Merkle tree
@@ -73,9 +73,9 @@ pub struct JSONAllocation {
 }
 
 /// Accumulated allocation data. Based on JSON data plus
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct CumulativeAllocation {
-    pub address: String,
+    pub address: FieldElement,
     pub cumulative_amount: u128,
 }
 

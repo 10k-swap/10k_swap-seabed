@@ -46,7 +46,7 @@ pub async fn get_calldata(query: web::Query<GetCalldataParams>) -> impl Responde
     // Get the round parameter. Use the max found round if it's not given in query parameters or is 0
     let round = if query.round == Some(0) { None } else { query.round };
 
-    let calldata = get_raw_calldata(round, &query.address.to_lowercase());
+    let calldata = get_raw_calldata(round, &query.address);
 
     match calldata {
         Ok(value) => HttpResponse::Ok().json(value),
@@ -65,7 +65,7 @@ pub struct GetAllocationAmountParams {
 #[utoipa::path(
     tag = "Gets the allocated, accumulated amount for a given address",
     responses(
-        (status = 200, description= "The allocated amount in hex", body = u128),       
+        (status = 200, description= "The allocated amount", body = String),       
     ),
     params(
         GetAllocationAmountParams
@@ -76,8 +76,8 @@ pub async fn get_allocation_amount(query: web::Query<GetAllocationAmountParams>)
     // Get the round parameter. Use the max found round if it's not given in query parameters or is 0
     let round = if query.round == Some(0) { None } else { query.round };
     
-    match get_raw_allocation_amount(round, &query.address.to_lowercase()) {
-        Ok(value) => HttpResponse::Ok().json(value),
+    match get_raw_allocation_amount(round, &query.address) {
+        Ok(value) => HttpResponse::Ok().json(value.to_string()),
         Err(value) => HttpResponse::BadRequest().json(value)
     }
 }
