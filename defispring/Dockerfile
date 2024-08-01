@@ -4,11 +4,11 @@ WORKDIR /build
 COPY . .
 RUN cargo build --release
 
-FROM debian:latest
+FROM ubuntu:22.04
 
 WORKDIR /app
 
-RUN apt-get update && apt install -y libpq-dev openssl ca-certificates
+RUN apt-get update
 COPY --from=builder /build .
 
 EXPOSE 8080
