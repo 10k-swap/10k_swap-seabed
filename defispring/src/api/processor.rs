@@ -79,10 +79,7 @@ fn get_round_data(round: Option<u8>) -> Result<RoundTreeData, String> {
         };
     }
 
-    let round_data = {
-        let all_data = get_all_data();
-        all_data.clone()
-    };
+    let round_data = get_all_data();
     let relevant_data = round_data.iter().find(|&p| p.round == use_round);
 
     match relevant_data {
