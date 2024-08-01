@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use regex::Regex;
 use serde_json::from_slice;
 use starknet_crypto::FieldElement;
@@ -92,57 +93,64 @@ fn get_round_data(round: Option<u8>) -> Result<RoundTreeData, String> {
 pub fn transform_allocations_to_cumulative_rounds(
     mut allocations: Vec<RoundAmounts>,
 ) -> Vec<RoundTreeData> {
-    if allocations.len() == 0 {
+    if allocations.is_empty() {
         return Vec::new();
     }
-    allocations.sort_by(|a, b| a.round.cmp(&b.round));
+
+    allocations.sort_by_key(|a| a.round);
 
     let cumulative_amount_maps = map_cumulative_amounts(allocations);
 
+    let results: Vec<_> = cumulative_amount_maps
+        .par_iter()
+        .map(|cum_map| {
+            let mut round_total_amount = 0_u128;
+
+            let curr_round_data: Vec<CumulativeAllocation> = cum_map
+                .cumulative_amounts
+                .iter()
+                .map(|(&address, &cumulative_amount)| {
+                    let amount = cum_map.round_amounts.get(&address).copied().unwrap_or(0);
+                    round_total_amount += amount;
+                    CumulativeAllocation {
+                        address,
+                        cumulative_amount,
+                    }
+                })
+                .collect();
+
+            let mut sorted_curr_round_data = curr_round_data;
+            sorted_curr_round_data.sort_by_key(|a| a.address);
+
+            let tree = MerkleTree::new(sorted_curr_round_data);
+
+            (cum_map.round, tree, round_total_amount)
+        })
+        .collect();
+
     let mut accumulated_total_amount = 0_u128;
+    let mut rounds = Vec::with_capacity(results.len());
 
-    let mut rounds: Vec<RoundTreeData> = Vec::new();
-    for cum_map in cumulative_amount_maps.iter() {
-        let mut curr_round_data: Vec<CumulativeAllocation> = Vec::new();
-        let mut round_total_amount = 0_u128;
-
-        // The cumulative map has all addresses that have any allocation in this round and all previous rounds
-        for key in cum_map.cumulative_amounts.keys() {
-            let address_cumulative = CumulativeAllocation {
-                address: *key,
-                cumulative_amount: cum_map.cumulative_amounts[key],
-            };
-            // If this round has this address add its amount to the round total amount
-            if cum_map.round_amounts.contains_key(key) {
-                round_total_amount += cum_map.round_amounts[key];
-            }
-            curr_round_data.push(address_cumulative);
-        }
+    for (round, tree, round_total_amount) in results {
         accumulated_total_amount += round_total_amount;
 
-        if curr_round_data.len() > 0 {
-            // Sort because hashmap iterator returns keys in arbitrary order
-            curr_round_data.sort_by(|a, b| a.address.cmp(&b.address));
+        let round_drop = RoundTreeData {
+            round,
+            tree,
+            accumulated_total_amount,
+            round_total_amount,
+        };
 
-            let tree = MerkleTree::new(curr_round_data);
+        println!(
+            "Extracted data from round {:?}: 
+            Round total token amount: {:?}, 
+            Cumulative token amount: {:?}",
+            round, round_drop.round_total_amount, round_drop.accumulated_total_amount
+        );
 
-            let round_drop = RoundTreeData {
-                round: cum_map.round,
-                tree: tree,
-                accumulated_total_amount: accumulated_total_amount,
-                round_total_amount: round_total_amount,
-            };
-
-            println!(
-                "Extracted data from round {:?}: 
-                Round total token amount: {:?}, 
-                Cumulative token amount: {:?}",
-                cum_map.round, round_drop.round_total_amount, round_drop.accumulated_total_amount
-            );
-
-            rounds.push(round_drop);
-        }
+        rounds.push(round_drop);
     }
+
     rounds
 }
 
