@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
-use std::sync::RwLock;
-use std::sync::RwLockReadGuard;
+use std::sync::Mutex;
+// use std::sync::RwLockReadGuard;
 
 use crate::api::structs::RoundTreeData;
 
@@ -8,17 +8,18 @@ use super::processor::read_allocations;
 
 // Use RwLock to allow for mutable access to the data
 lazy_static! {
-    static ref ROUND_DATA: RwLock<Vec<RoundTreeData>> = RwLock::new(Vec::new());
+    static ref ROUND_DATA: Mutex<Option<Vec<RoundTreeData>>> = Mutex::new(None);
 }
 
-pub fn get_all_data<'a>() -> RwLockReadGuard<'a, Vec<RoundTreeData>> {
-    ROUND_DATA.read().expect("Failed to acquire read lock")
+pub fn get_all_data() -> Vec<RoundTreeData> {
+    let data = ROUND_DATA.lock().expect("Failed to acquire lock");
+    data.clone().unwrap_or_else(Vec::new)
 }
 
 pub fn update_api_data() {
-    let mut data = ROUND_DATA.write().expect("Failed to acquire write lock");
+    let mut data = ROUND_DATA.lock().expect("Failed to acquire lock");
 
     let drops = read_allocations("./raw_input".to_string());
 
-    *data = drops;
+    *data = Some(drops);
 }
