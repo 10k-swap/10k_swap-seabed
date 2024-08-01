@@ -66,17 +66,18 @@ pub fn get_raw_root(round: Option<u8>) -> Result<RootQueryResult, String> {
 
 // Gets data for a specific round
 fn get_round_data(round: Option<u8>) -> Result<RoundTreeData, String> {
-    let use_round = {
+    let use_round;
+    {
         let round_data = get_all_data();
 
-        match round {
+        use_round = match round {
             Some(v) => v,
             None => match round_data.iter().max_by_key(|p| p.round) {
                 None => return Err("No allocation data found".to_string()),
                 Some(p) => p.round,
             },
-        }
-    };
+        };
+    }
 
     let round_data = get_all_data();
     let relevant_data = round_data.iter().find(|&p| p.round == use_round);
@@ -238,18 +239,11 @@ pub fn retrieve_valid_files(filepath: String) -> Vec<FileNameInfo> {
 impl RoundTreeData {
     /// Retrieve allocated amount for an address in a specific round
     pub fn address_amount(&self, address: FieldElement) -> Result<u128, String> {
-        let address_drop: Vec<CumulativeAllocation> = self
-            .tree
-            .allocations
-            .iter()
-            .filter(|a| a.address == address)
-            .cloned()
-            .collect();
+        let address_drop = self.tree.allocations.iter().find(|&a| a.address == address);
 
-        if address_drop.len() == 0 {
-            Ok(0_u128)
-        } else {
-            Ok(address_drop.get(0).unwrap().cumulative_amount)
+        match address_drop {
+            Some(drop) => Ok(drop.cumulative_amount),
+            None => Ok(0_u128),
         }
     }
 }
