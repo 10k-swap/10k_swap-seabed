@@ -1,10 +1,10 @@
-FROM rust:buster as builder
+FROM rust:1.76.0 as builder
 
 WORKDIR /build
 COPY . .
 RUN cargo build --release
 
-FROM debian:buster-slim
+FROM debian:latest
 
 WORKDIR /app
 
@@ -13,4 +13,4 @@ COPY --from=builder /build .
 
 EXPOSE 8080
 
-CMD ["./api_run"]
+CMD ["./target/release/api_run"]
