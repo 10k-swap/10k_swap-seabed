@@ -1,14 +1,14 @@
-FROM rust:1.76.0 as builder
+FROM rust:buster as builder
 
 WORKDIR /build
 COPY . .
 RUN cargo build --release
 
-FROM ubuntu:22.04
+FROM debian:buster-slim
 
 WORKDIR /app
 
-RUN apt-get update
+RUN apt-get update && apt install -y libpq-dev openssl ca-certificates
 COPY --from=builder /build .
 
 EXPOSE 8080
