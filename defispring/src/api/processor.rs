@@ -66,23 +66,34 @@ pub fn get_raw_root(round: Option<u8>) -> Result<RootQueryResult, String> {
 
 // Gets data for a specific round
 fn get_round_data(round: Option<u8>) -> Result<RoundTreeData, String> {
-    let round_data = get_all_data();
-    // Use round if it's provided. Otherwise use the latest round
-    let use_round = match round {
-        Some(v) => v,
-        None => match round_data.iter().max_by_key(|&p| p.round) {
-            None => return Err("No allocation data found".to_string()),
-            Some(p) => p.round,
-        },
+    let use_round = {
+        let round_data = get_all_data();
+
+        match round {
+            Some(v) => v,
+            None => match round_data.iter().max_by_key(|p| p.round) {
+                None => return Err("No allocation data found".to_string()),
+                Some(p) => p.round,
+            },
+        }
     };
-    let mut relevant_data = round_data
-        .iter()
-        .filter(|&p| p.round == use_round)
-        .collect::<Vec<&RoundTreeData>>();
-    if relevant_data.len() != 1 {
-        return Err("No allocation data available".to_string());
+
+    let round_data = get_all_data();
+    let relevant_data = round_data.iter().find(|&p| p.round == use_round);
+
+    match relevant_data {
+        Some(data) => Ok(data.clone()),
+        None => Err("No allocation data available".to_string()),
     }
-    Ok(relevant_data.remove(0).clone())
+
+    // let mut relevant_data = round_data
+    //     .iter()
+    //     .filter(|&p| p.round == use_round)
+    //     .collect::<Vec<&RoundTreeData>>();
+    // if relevant_data.len() != 1 {
+    //     return Err("No allocation data available".to_string());
+    // }
+    // Ok(relevant_data.remove(0).clone())
 }
 
 /// Converts JSON allocation data into cumulative tree+data per round
