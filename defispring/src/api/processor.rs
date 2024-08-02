@@ -14,8 +14,11 @@ use super::{
 };
 use zip::ZipArchive;
 
-pub fn get_raw_calldata(round: Option<u8>, address: &String) -> Result<CairoCalldata, String> {
-    let relevant_data = match get_round_data(round) {
+pub async fn get_raw_calldata(
+    round: Option<u8>,
+    address: &String,
+) -> Result<CairoCalldata, String> {
+    let relevant_data = match get_round_data(round).await {
         Ok(value) => value,
         Err(value) => {
             return Err(value);
@@ -31,8 +34,11 @@ pub fn get_raw_calldata(round: Option<u8>, address: &String) -> Result<CairoCall
     Ok(calldata)
 }
 
-pub fn get_raw_allocation_amount(round: Option<u8>, address: &String) -> Result<u128, String> {
-    let relevant_data = match get_round_data(round) {
+pub async fn get_raw_allocation_amount(
+    round: Option<u8>,
+    address: &String,
+) -> Result<u128, String> {
+    let relevant_data = match get_round_data(round).await {
         Ok(value) => value,
         Err(value) => return Err(value),
     };
@@ -52,8 +58,8 @@ pub fn get_raw_allocation_amount(round: Option<u8>, address: &String) -> Result<
     Ok(drop.cumulative_amount)
 }
 
-pub fn get_raw_root(round: Option<u8>) -> Result<RootQueryResult, String> {
-    let relevant_data = match get_round_data(round) {
+pub async fn get_raw_root(round: Option<u8>) -> Result<RootQueryResult, String> {
+    let relevant_data = match get_round_data(round).await {
         Ok(value) => value,
         Err(value) => return Err(value),
     };
@@ -66,10 +72,10 @@ pub fn get_raw_root(round: Option<u8>) -> Result<RootQueryResult, String> {
 }
 
 // Gets data for a specific round
-fn get_round_data(round: Option<u8>) -> Result<RoundTreeData, String> {
+async fn get_round_data(round: Option<u8>) -> Result<RoundTreeData, String> {
     let use_round;
     {
-        let round_data = get_all_data();
+        let round_data = get_all_data().await;
 
         use_round = match round {
             Some(v) => v,
@@ -80,7 +86,7 @@ fn get_round_data(round: Option<u8>) -> Result<RoundTreeData, String> {
         };
     }
 
-    let round_data = get_all_data();
+    let round_data = get_all_data().await;
     let relevant_data = round_data.iter().find(|&p| p.round == use_round);
 
     match relevant_data {

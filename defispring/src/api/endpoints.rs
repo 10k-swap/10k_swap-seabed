@@ -46,7 +46,7 @@ pub async fn get_calldata(query: web::Query<GetCalldataParams>) -> impl Responde
     // Get the round parameter. Use the max found round if it's not given in query parameters or is 0
     let round = if query.round == Some(0) { None } else { query.round };
 
-    let calldata = get_raw_calldata(round, &query.address);
+    let calldata = get_raw_calldata(round, &query.address).await;
 
     match calldata {
         Ok(value) => HttpResponse::Ok().json(value),
@@ -76,7 +76,7 @@ pub async fn get_allocation_amount(query: web::Query<GetAllocationAmountParams>)
     // Get the round parameter. Use the max found round if it's not given in query parameters or is 0
     let round = if query.round == Some(0) { None } else { query.round };
     
-    match get_raw_allocation_amount(round, &query.address) {
+    match get_raw_allocation_amount(round, &query.address).await {
         Ok(value) => HttpResponse::Ok().json(value.to_string()),
         Err(value) => HttpResponse::BadRequest().json(value)
     }
@@ -102,7 +102,7 @@ pub async fn get_root(query: web::Query<GetRootParams>) -> impl Responder {
     // Get the round parameter. Use the max found round if it's not given in query parameters or is 0
     let round = if query.round == Some(0) { None } else { query.round };
 
-    match get_raw_root(round)  {
+    match get_raw_root(round).await  {
         Ok(v) => HttpResponse::Ok().json(&v),
         Err(value) => return HttpResponse::BadRequest().json(value),
     }

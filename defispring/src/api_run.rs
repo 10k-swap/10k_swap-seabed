@@ -6,9 +6,9 @@ use defispring::api::{
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-#[actix_web::main]
+#[tokio::main]
 async fn main() -> std::io::Result<()> {
-    update_api_data();
+    update_api_data().await;
 
     let openapi = ApiDoc::openapi();
 
