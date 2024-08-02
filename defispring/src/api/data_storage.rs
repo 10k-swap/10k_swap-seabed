@@ -1,6 +1,5 @@
 use lazy_static::lazy_static;
-use std::sync::RwLock;
-use std::sync::RwLockReadGuard;
+use std::sync::{Arc, RwLock, RwLockReadGuard};
 
 use crate::api::structs::RoundTreeData;
 
@@ -8,7 +7,7 @@ use super::processor::read_allocations;
 
 // Use RwLock to allow for mutable access to the data
 lazy_static! {
-    static ref ROUND_DATA: RwLock<Vec<RoundTreeData>> = RwLock::new(Vec::new());
+    static ref ROUND_DATA: Arc<RwLock<Vec<RoundTreeData>>> = Arc::new(RwLock::new(Vec::new()));
 }
 
 pub fn get_all_data<'a>() -> RwLockReadGuard<'a, Vec<RoundTreeData>> {
