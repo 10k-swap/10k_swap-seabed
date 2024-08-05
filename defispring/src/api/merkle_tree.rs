@@ -82,8 +82,8 @@ impl Node {
         };
         let value = hash(&left_child.value, &right_child.value);
         let mut accessible_addresses = HashSet::new();
-        accessible_addresses.extend(left_child.accessible_addresses.clone());
-        accessible_addresses.extend(right_child.accessible_addresses.clone());
+        accessible_addresses.extend(&left_child.accessible_addresses);
+        accessible_addresses.extend(&right_child.accessible_addresses);
 
         Node {
             left_child: Some(Box::new(left_child)),
@@ -108,12 +108,12 @@ impl Node {
 }
 
 enum TreeBuilder {
-    KeepGoing(Vec<Node>),
+    Some(Vec<Node>),
     Done(Node),
 }
 
 fn build_tree(leaves: Vec<Node>) -> Node {
-    match build_tree_recursively(TreeBuilder::KeepGoing(leaves)) {
+    match build_tree_recursively(TreeBuilder::Some(leaves)) {
         TreeBuilder::Done(root) => return root,
         _ => unreachable!("Failed building the tree"),
     }
@@ -121,7 +121,7 @@ fn build_tree(leaves: Vec<Node>) -> Node {
 
 fn build_tree_recursively(tree_builder: TreeBuilder) -> TreeBuilder {
     let mut nodes = match tree_builder {
-        TreeBuilder::KeepGoing(nodes) => nodes,
+        TreeBuilder::Some(nodes) => nodes,
         _ => unreachable!("Failed building the tree"),
     };
 
@@ -144,7 +144,7 @@ fn build_tree_recursively(tree_builder: TreeBuilder) -> TreeBuilder {
         next_nodes.push(next_nodes.last().unwrap().clone());
     }
 
-    build_tree_recursively(TreeBuilder::KeepGoing(next_nodes))
+    build_tree_recursively(TreeBuilder::Some(next_nodes))
 }
 
 pub fn felt_to_b16(felt: &FieldElement) -> String {
