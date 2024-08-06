@@ -211,7 +211,7 @@ pub fn read_allocations(filepath: String) -> Vec<RoundTreeData> {
                 from_slice(&buffer).expect("Failed to deserialize allocation");
 
             let round_amount = RoundAmounts {
-                amounts: allocation.clone(),
+                amounts: allocation,
                 round: file.round,
             };
             round_amounts.push(round_amount);
