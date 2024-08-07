@@ -8,7 +8,7 @@ import { ActivityDefispring } from '../model/activity_defispring'
 import { PairTransfer } from '../model/pair_transfer'
 import { equalBN } from '../util'
 import { Core } from '../util/core'
-import { accessLogger } from '../util/logger'
+import { accessLogger, errorLogger } from '../util/logger'
 
 type AccountHValue = Record<
   string,
@@ -69,10 +69,15 @@ export class ActivityDefispringService {
 
     await this.repoActivityDefispring.clear() // TRUNCATE activity_defispring;
 
-    let lastEventTime = (await this.repoPairTransfer.findOne({
+    const pairTransfer = await this.repoPairTransfer.findOne({
       select: ['event_time'],
       order: { event_time: 'ASC' },
-    }))!.event_time
+    })
+    if (!pairTransfer) {
+      accessLogger.warn('Statistics defispring: empty pairTransfer')
+      return
+    }
+    let lastEventTime = pairTransfer.event_time
 
     let lastPairTransfer: PairTransfer | undefined = undefined
 
