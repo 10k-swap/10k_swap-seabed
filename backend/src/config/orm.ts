@@ -1,6 +1,10 @@
 import path from 'path'
 import { ConnectionOptions } from 'typeorm'
-import { isDevelopEnv } from '../util'
+
+const synchronize =
+  process.env.DB_ORM_SYNCHRONIZE === undefined
+    ? false
+    : process.env.DB_ORM_SYNCHRONIZE.trim() == 'true'
 
 export const options: ConnectionOptions = {
   type: 'postgres',
@@ -9,7 +13,7 @@ export const options: ConnectionOptions = {
   username: process.env.DB_USER || 'l0k_swap_seabed',
   password: process.env.DB_PASSWORD || '123456',
   database: process.env.DB_NAME || 'l0k_swap_seabed',
-  synchronize: isDevelopEnv(),
+  synchronize,
   logging: false,
   extra: {},
   maxQueryExecutionTime: 2000, // Show slow query
