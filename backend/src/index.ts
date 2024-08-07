@@ -82,6 +82,7 @@ const main = async () => {
     // Connet redis
     Core.redis = new Redis({
       ...redisConfig.options,
+      family: 0,
       retryStrategy: (times) => {
         return Math.min(times * 1000, 15000)
       },
