@@ -16,7 +16,7 @@ starknet-crypto = "0.6.2"
 actix-web = "4"
 lazy_static = "1.4"
 regex = "1.10.3"
-zip = "0.6.6"
+zip = "2.1.6"
 utoipa = { version = "4.2.0", features = ["chrono", "actix_extras"] }
 utoipa-swagger-ui = { version = "6.0.0", features = ["actix-web"] }
 rayon = "1.5"
