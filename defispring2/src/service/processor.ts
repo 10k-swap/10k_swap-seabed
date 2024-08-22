@@ -13,6 +13,7 @@ import {
 import { accessLogger } from '../util/logger'
 import { get_all_data } from './data_storage'
 import { MerkleTree } from './merkle_tree'
+import { addAddressPadding, getChecksumAddress } from 'starknet'
 
 async function retrieve_valid_files(filepath: string) {
   const valid_files: FileNameInfo[] = []
@@ -94,7 +95,7 @@ async function transform_allocations_to_cumulative_rounds(
   const cumulative_amount_maps = map_cumulative_amounts(allocations)
 
   const results = (
-    await PromisePool.withConcurrency(1)
+    await PromisePool.withConcurrency(20)
       .for(cumulative_amount_maps)
       .handleError((e) => {
         throw e
@@ -218,7 +219,7 @@ export async function get_round_data(round: number) {
 export async function get_raw_calldata(round: number, address: string) {
   const relevant_data = await get_round_data(round)
 
-  const result = relevant_data.tree.address_calldata(address)
+  const result = relevant_data.tree.address_calldata(addAddressPadding(address))
 
   return result
 }
