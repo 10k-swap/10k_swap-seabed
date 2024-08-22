@@ -150,8 +150,12 @@ pub fn transform_allocations_to_cumulative_rounds(
         println!(
             "Extracted data from round {:?}: 
             Round total token amount: {:?}, 
-            Cumulative token amount: {:?}",
-            round, round_drop.round_total_amount, round_drop.accumulated_total_amount
+            Cumulative token amount: {:?},
+            round_drop.tree.root: {:?}",
+            round,
+            round_drop.round_total_amount,
+            round_drop.accumulated_total_amount,
+            round_drop.tree.root.value
         );
 
         rounds.push(round_drop);
