@@ -8,5 +8,5 @@ export async function get_all_data() {
 }
 
 export async function update_api_data() {
-  ROUND_DATA = await read_allocations('../defispring/raw_input')
+  ROUND_DATA = await read_allocations('./raw_input')
 }
