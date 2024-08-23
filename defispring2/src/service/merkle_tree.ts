@@ -44,7 +44,7 @@ export class MerkleTree {
 
   public address_calldata(address: string) {
     if (!this.root.accessible_addresses.has(address)) {
-      throw new Error('Address not found in tree')
+      throw new Error(`Address not found in tree: ${address}`)
     }
 
     let hashes: string[] = []
