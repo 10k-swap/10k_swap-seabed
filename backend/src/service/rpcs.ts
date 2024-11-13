@@ -47,7 +47,6 @@ export class RpcsService {
       case 0:
         return rpcsService.nethermindRpcProvider()
       case 1:
-        // return rpcsService.alchemyRpcProvider()
         return rpcsService.lavaRpcProvider()
       default:
         return rpcsService.defaultRpcProvider()

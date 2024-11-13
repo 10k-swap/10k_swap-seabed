@@ -75,7 +75,7 @@ export class PoolService {
     const contract = new Contract(
       contractConfig.abis.erc20 as any,
       address,
-      RpcsService.createRandomRpcProvider()
+      new RpcsService().alchemyRpcProvider()
     )
 
     const [nameResp, symbolResp, decimalsResp] = await Promise.all([
@@ -207,7 +207,7 @@ export class PoolService {
         lastUpdatedTime: new Date().toISOString(),
       })
 
-      await sleep(1000)
+      await sleep(200)
     }
 
     // If the new pairs does not contain the old, the data is invalid
@@ -220,12 +220,14 @@ export class PoolService {
       }
     }
 
+    accessLogger.info('Pool collect completed, length:', _pairs.length)
+
     // Replace PoolService._pairs
     PoolService.pairs = _pairs
   }
 
   async getPairCreatedEvents() {
-    const rpcProvider = new RpcsService().lavaRpcProvider()
+    const rpcProvider = new RpcsService().alchemyRpcProvider()
 
     let events: RPC.SPEC.EMITTED_EVENT[] = []
     let continuation_token: string | undefined = undefined
