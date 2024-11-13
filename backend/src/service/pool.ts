@@ -95,7 +95,7 @@ export class PoolService {
     const contract = new Contract(
       contractConfig.abis.l0kPair as any,
       address,
-      RpcsService.createRandomRpcProvider()
+      new RpcsService().alchemyRpcProvider()
     )
 
     const decimals = 18 // 10kPair token's decimals always is 18

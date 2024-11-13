@@ -53,7 +53,7 @@ class MJob {
         if (this.jobName) {
           message += `, jobName: ${this.jobName}`
         }
-        errorLogger.error(message)
+        errorLogger.error(error)
       }
     })
 
