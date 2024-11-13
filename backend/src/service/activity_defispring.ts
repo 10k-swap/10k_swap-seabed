@@ -69,10 +69,16 @@ export class ActivityDefispringService {
 
     await this.repoActivityDefispring.clear() // TRUNCATE activity_defispring;
 
-    let lastEventTime = (await this.repoPairTransfer.findOne({
+    const firstPairTransfer = await this.repoPairTransfer.findOne({
       select: ['event_time'],
       order: { event_time: 'ASC' },
-    }))!.event_time
+    })
+    if (!firstPairTransfer) {
+      accessLogger.warn('ActivityDefispring error: miss pair transfer')
+      return
+    }
+
+    let lastEventTime = firstPairTransfer.event_time
 
     let lastPairTransfer: PairTransfer | undefined = undefined
 

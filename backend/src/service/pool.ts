@@ -225,7 +225,7 @@ export class PoolService {
   }
 
   async getPairCreatedEvents() {
-    const rpcProvider = RpcsService.createRandomRpcProvider()
+    const rpcProvider = new RpcsService().lavaRpcProvider()
 
     let events: RPC.SPEC.EMITTED_EVENT[] = []
     let continuation_token: string | undefined = undefined

@@ -8,7 +8,7 @@ export class RpcsService {
     return new RpcProvider({
       nodeUrl: isDevelopEnv()
         ? 'https://starknet-testnet.public.blastapi.io'
-        : 'https://starknet-mainnet.public.blastapi.io',
+        : 'https://starknet.blockpi.network/v1/rpc/public',
     })
   }
 
@@ -45,10 +45,10 @@ export class RpcsService {
     const rpcsService = new RpcsService()
     switch (random) {
       case 0:
-      // return rpcsService.nethermindRpcProvider()
+        return rpcsService.nethermindRpcProvider()
       case 1:
-        return rpcsService.alchemyRpcProvider()
-      // return rpcsService.lavaRpcProvider()
+        // return rpcsService.alchemyRpcProvider()
+        return rpcsService.lavaRpcProvider()
       default:
         return rpcsService.defaultRpcProvider()
     }
