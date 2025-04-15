@@ -14,6 +14,7 @@ import { AnalyticsService } from './analytics'
 import { OKXService } from './okx'
 import { RpcsService } from './rpcs'
 import { PAIR_CREATED_EVENT_KEY } from '../constants'
+import _ from 'lodash'
 
 export type Pair = {
   token0: { address: string; name: string; symbol: string; decimals: number }
@@ -243,12 +244,16 @@ export class PoolService {
       events = events.concat(result.events)
 
       continuation_token = result.continuation_token
+
+      accessLogger.info('continuation_token:', continuation_token)
+      accessLogger.info('events.length:', events.length)
+
       if (continuation_token === undefined) {
         if (startBlockNumber == 5060) startBlockNumber = 562380
         else break
       }
     }
 
-    return events
+    return _.uniqBy(events, 'transaction_hash')
   }
 }
