@@ -231,9 +231,11 @@ export class PoolService {
 
     let events: RPC.SPEC.EMITTED_EVENT[] = []
     let continuation_token: string | undefined = undefined
+    let startBlockNumber = 5060
     while (true) {
       const result = await rpcProvider.getEvents({
         address: this.factoryAddress,
+        from_block: { block_number: startBlockNumber },
         chunk_size: 100,
         continuation_token,
       })
@@ -241,7 +243,10 @@ export class PoolService {
       events = events.concat(result.events)
 
       continuation_token = result.continuation_token
-      if (continuation_token === undefined) break
+      if (continuation_token === undefined) {
+        if (startBlockNumber == 5060) startBlockNumber = 562380
+        else break
+      }
     }
 
     return events
